@@ -30,7 +30,19 @@ export function DashboardHeader({ profile }: DashboardHeaderProps) {
                 <h1 className="text-xl font-bold text-white">Dashboard</h1>
             </div>
 
-            <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-3">
+                {isQuizDashboard && !isAttemptView && (
+                    <Link
+                        href={attemptHref}
+                        className={cn(
+                            "inline-flex h-9 items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-4 text-xs font-semibold uppercase tracking-[0.22em] text-blue-300 transition-all hover:bg-blue-500/20 hover:text-white"
+                        )}
+                    >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Attempt Quiz
+                    </Link>
+                )}
+
                 <div className="flex items-center gap-4">
                     <div className="flex flex-col items-end hidden sm:flex">
                         <p className="text-sm font-medium text-white">{profile?.full_name || 'User'}</p>
@@ -53,18 +65,6 @@ export function DashboardHeader({ profile }: DashboardHeaderProps) {
                         <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-black bg-green-500" />
                     </Link>
                 </div>
-
-                {isQuizDashboard && !isAttemptView && (
-                    <Link
-                        href={attemptHref}
-                        className={cn(
-                            "inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-blue-300 transition-all hover:bg-blue-500/20 hover:text-white"
-                        )}
-                    >
-                        <Sparkles className="h-3.5 w-3.5" />
-                        Attempt Quiz
-                    </Link>
-                )}
             </div>
         </header>
     )

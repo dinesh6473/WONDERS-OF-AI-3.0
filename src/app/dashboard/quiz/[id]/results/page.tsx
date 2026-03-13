@@ -81,7 +81,13 @@ export default async function QuizResultsPage({
             <h3 className="text-xl font-semibold text-white mb-6">Detailed Review</h3>
             
             <div className="space-y-6">
-                {questions.map((q: any, index: number) => {
+                {questions.map((q: {
+                    type: string
+                    difficulty_label?: string
+                    question: string
+                    correct_answer: string | string[]
+                    explanation: string
+                }, index: number) => {
                     const userAnswer = user_answers[index]
                     const isMulti = q.type === 'multi_mcq'
                     

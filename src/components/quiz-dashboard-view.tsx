@@ -179,34 +179,44 @@ export function QuizDashboardView({
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       <div className="mb-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.22),transparent_30%),linear-gradient(145deg,rgba(24,24,27,0.96),rgba(9,9,11,0.92))] p-8 shadow-[0_30px_120px_rgba(0,0,0,0.45)]">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-blue-300">
-            <Sparkles className="h-3.5 w-3.5" />
-            Quiz Analytics
+          <div>
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-blue-300">
+              <Sparkles className="h-3.5 w-3.5" />
+              Quiz Analytics
+            </div>
+            <h1 className="max-w-2xl text-4xl font-bold leading-tight text-white sm:text-5xl">
+              Your full quiz performance lives right here on the quiz page.
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400 sm:text-lg">
+              Review attempt metrics, answer quality, latest parameters, and complete history without
+              leaving the main quiz dashboard.
+            </p>
           </div>
-          <h1 className="max-w-2xl text-4xl font-bold leading-tight text-white sm:text-5xl">
-            Your full quiz performance lives right here on the quiz page.
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400 sm:text-lg">
-            Review attempt metrics, answer quality, latest parameters, and complete history without
-            leaving the main quiz dashboard.
-          </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Button
-              asChild
-              className="h-12 rounded-full bg-white px-6 font-semibold text-black hover:bg-zinc-200"
-            >
-              <Link href="/dashboard/quiz?view=attempt">
-                Attempt Quiz
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300">
-              <Clock3 className="h-4 w-4 text-zinc-500" />
-              Last activity:{" "}
-              {analytics.latestAttempt
-                ? formatDate(analytics.latestAttempt.attemptedAt)
-                : "No quizzes attempted yet"}
+          <div className="mt-12 border-t border-white/10 pt-6">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm text-zinc-400">
+                Start a new attempt whenever you want from this quick action area.
+              </div>
+              <Button
+                asChild
+                className="h-12 rounded-full bg-white px-6 font-semibold text-black hover:bg-zinc-200"
+              >
+                <Link href="/dashboard/quiz?view=attempt">
+                  Attempt Quiz
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <div className="inline-flex min-h-12 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300">
+                <Clock3 className="h-4 w-4 text-zinc-500" />
+                Last activity:{" "}
+                {analytics.latestAttempt
+                  ? formatDate(analytics.latestAttempt.attemptedAt)
+                  : "No quizzes attempted yet"}
+              </div>
             </div>
           </div>
         </div>
