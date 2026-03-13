@@ -219,6 +219,57 @@ create policy "Users can manage own flashcards" on flashcards for all using (
   )
 );
 
+-- 6. QUIZZES
+create table if not exists quizzes (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users not null,
+  subject_id uuid references subjects(id) on delete set null,
+  subject_name text not null,
+  difficulty integer not null check (difficulty between 1 and 5),
+  topics jsonb not null default '{}'::jsonb,
+  questions jsonb not null default '[]'::jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table quizzes enable row level security;
+
+do $$ begin
+  drop policy if exists "Users can view own quizzes" on quizzes;
+  drop policy if exists "Users can insert own quizzes" on quizzes;
+  drop policy if exists "Users can update own quizzes" on quizzes;
+  drop policy if exists "Users can delete own quizzes" on quizzes;
+end $$;
+
+create policy "Users can view own quizzes" on quizzes for select using (auth.uid() = user_id);
+create policy "Users can insert own quizzes" on quizzes for insert with check (auth.uid() = user_id);
+create policy "Users can update own quizzes" on quizzes for update using (auth.uid() = user_id);
+create policy "Users can delete own quizzes" on quizzes for delete using (auth.uid() = user_id);
+
+-- 7. QUIZ RESULTS
+create table if not exists quiz_results (
+  id uuid default uuid_generate_v4() primary key,
+  quiz_id uuid references quizzes(id) on delete cascade not null,
+  user_id uuid references auth.users not null,
+  score integer not null default 0,
+  total_questions integer not null default 0,
+  user_answers jsonb not null default '{}'::jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table quiz_results enable row level security;
+
+do $$ begin
+  drop policy if exists "Users can view own quiz results" on quiz_results;
+  drop policy if exists "Users can insert own quiz results" on quiz_results;
+  drop policy if exists "Users can update own quiz results" on quiz_results;
+  drop policy if exists "Users can delete own quiz results" on quiz_results;
+end $$;
+
+create policy "Users can view own quiz results" on quiz_results for select using (auth.uid() = user_id);
+create policy "Users can insert own quiz results" on quiz_results for insert with check (auth.uid() = user_id);
+create policy "Users can update own quiz results" on quiz_results for update using (auth.uid() = user_id);
+create policy "Users can delete own quiz results" on quiz_results for delete using (auth.uid() = user_id);
+
 -- Trigger to handle new user signup
 create or replace function public.handle_new_user() 
 returns trigger as $$

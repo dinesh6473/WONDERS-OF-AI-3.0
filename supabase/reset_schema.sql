@@ -5,6 +5,8 @@
 
 -- 1. CLEANUP (Drop Existing Tables & Types)
 drop table if exists flashcards cascade;
+drop table if exists quiz_results cascade;
+drop table if exists quizzes cascade;
 drop table if exists topic_content cascade;
 drop table if exists topic_dependencies cascade;
 drop table if exists topics cascade;
@@ -147,3 +149,38 @@ create policy "Users can manage flashcards" on flashcards for all using (
     where topics.id = flashcards.topic_id and subjects.user_id = auth.uid()
   )
 );
+
+-- H. QUIZZES
+create table quizzes (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users not null,
+  subject_id uuid references subjects(id) on delete set null,
+  subject_name text not null,
+  difficulty integer not null check (difficulty between 1 and 5),
+  topics jsonb not null default '{}'::jsonb,
+  questions jsonb not null default '[]'::jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table quizzes enable row level security;
+create policy "Users can view own quizzes" on quizzes for select using (auth.uid() = user_id);
+create policy "Users can insert own quizzes" on quizzes for insert with check (auth.uid() = user_id);
+create policy "Users can update own quizzes" on quizzes for update using (auth.uid() = user_id);
+create policy "Users can delete own quizzes" on quizzes for delete using (auth.uid() = user_id);
+
+-- I. QUIZ RESULTS
+create table quiz_results (
+  id uuid default uuid_generate_v4() primary key,
+  quiz_id uuid references quizzes(id) on delete cascade not null,
+  user_id uuid references auth.users not null,
+  score integer not null default 0,
+  total_questions integer not null default 0,
+  user_answers jsonb not null default '{}'::jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table quiz_results enable row level security;
+create policy "Users can view own quiz results" on quiz_results for select using (auth.uid() = user_id);
+create policy "Users can insert own quiz results" on quiz_results for insert with check (auth.uid() = user_id);
+create policy "Users can update own quiz results" on quiz_results for update using (auth.uid() = user_id);
+create policy "Users can delete own quiz results" on quiz_results for delete using (auth.uid() = user_id);

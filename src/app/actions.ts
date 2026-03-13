@@ -99,6 +99,17 @@ async function getApiKeyInternal() {
     return null
 }
 
+async function getApiKeyForUserId(userId: string) {
+    const supabase = await createClient()
+    const { data } = await supabase
+        .from('profiles')
+        .select('gemini_api_key')
+        .eq('id', userId)
+        .single()
+
+    return data?.gemini_api_key || null
+}
+
 async function extractTextFromFile(file: File): Promise<string> {
     const buffer = Buffer.from(await file.arrayBuffer())
     const type = file.type
@@ -1303,14 +1314,19 @@ export async function generateQuiz(params: {
     const user = response.data?.user
     if (!user) throw new Error('Not authenticated')
 
-    const apiKey = await getApiKeyInternal()
+    const apiKey = await getApiKeyForUserId(user.id)
     if (!apiKey) throw new Error('API Key missing. Please set it in Settings.')
 
     // 1. Fetch previous questions to build an EXCLUDE_LIST
     // We only want to exclude questions from the same subject/topics to avoid getting too general.
     let excludeContext = ""
     try {
-        let query = supabase.from('quizzes').select('questions').eq('user_id', user.id)
+        let query = supabase
+            .from('quizzes')
+            .select('questions')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(6)
         if (params.subjectName) {
             query = query.eq('subject_name', params.subjectName)
         }
@@ -1326,10 +1342,10 @@ export async function generateQuiz(params: {
                 }
             })
             
-            // Limit exclude list so prompt doesn't get infinitely big, e.g. last 100 questions.
-            const limitedExclude = previousQuestions.slice(-100)
+            // Keep the prompt small so generation starts faster.
+            const limitedExclude = previousQuestions.slice(0, 24)
             if (limitedExclude.length > 0) {
-                excludeContext = `\n\nEXCLUDE_LIST: DO NOT generate any of these exact questions again. You MUST create entirely NEW, unique questions:\n${JSON.stringify(limitedExclude)}`
+                excludeContext = `\nAvoid reusing these exact questions: ${JSON.stringify(limitedExclude)}`
             }
         }
     } catch (e) {
@@ -1344,38 +1360,27 @@ export async function generateQuiz(params: {
     })
 
     const prompt = `
-        Act as an Expert Quiz Master and University Evaluator.
-        Generate exactly ${params.count} questions for a quiz.
-        
-        CONTEXT:
-        Subject: ${params.subjectName}
-        Focus Topics: ${params.topics}
-        Difficulty Goal (1-5, where 1 = Beginner, 5 = Expert): ${params.difficulty}
-        ${excludeContext}
-        
-        Generate a mix of question formats to test deep understanding:
-        - "single_mcq" (Select exactly ONE correct answer out of 4 options)
-        - "multi_mcq" (Select Multiple correct answers out of 4-5 options)
-        - "fill_in_blank" (Provide a statement with a specific missing key term. Option array should be EMPTY. Correct answer must be a short 1-3 word exact phrase)
-        
-        REQUIREMENTS:
-        1. Return ONLY valid JSON matching this schema:
-        {
-          "questions": [
-             {
-               "type": "single_mcq" | "multi_mcq" | "fill_in_blank",
-               "question": "The question text or fill in the blank statement (use '_____' for the blank).",
-               "options": ["Option A", "Option B", "Option C", "Option D"] (Only for MCQs, otherwise empty array),
-               "correct_answer": "Option B" (for single_mcq/fill_in_blank) OR ["Option A", "Option C"] (for multi_mcq),
-               "explanation": "Detailed explanation of why this is correct AND why typical wrong answers are wrong.",
-               "difficulty_label": "Easy" | "Medium" | "Hard"
-             }
-          ]
-        }
-        
-        2. Ensure absolute correctness.
-        3. Match the difficulty goal. If difficulty is 5, ask highly advanced, specific, nuanced questions. If 1, ask fundamental definitions.
-        4. NO MARKDOWN wrapping in the output. ONLY raw JSON. Do NOT include \`\`\`json.
+Generate exactly ${params.count} quiz questions as raw JSON.
+
+Subject: ${params.subjectName}
+Topics: ${params.topics || "General coverage"}
+Difficulty: ${params.difficulty}/5
+${excludeContext}
+
+Use a balanced mix of:
+- single_mcq: exactly 4 options, one correct answer
+- multi_mcq: 4 or 5 options, multiple correct answers
+- fill_in_blank: use "_____", options must be []
+
+Return only:
+{"questions":[{"type":"single_mcq|multi_mcq|fill_in_blank","question":"...","options":["..."],"correct_answer":"..." ,"explanation":"Brief but clear explanation.","difficulty_label":"Easy|Medium|Hard"}]}
+
+Rules:
+- no markdown
+- no extra text
+- factually correct
+- match requested difficulty
+- keep explanations concise
     `
 
     try {
@@ -1428,6 +1433,7 @@ export async function generateQuiz(params: {
             .insert({
                 id: newQuizId,
                 user_id: user.id,
+                subject_id: params.subjectId || null,
                 subject_name: params.subjectName,
                 difficulty: params.difficulty,
                 topics: { raw: params.topics },
