@@ -1,0 +1,211 @@
+@import "tailwindcss";
+/* @import "tw-animate-css"; */
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+}
+
+@layer base {
+  :root {
+    --radius: 0.75rem;
+
+    /* == LIGHT THEME (Structured Intelligence - Academic) == */
+    --background: oklch(0.985 0.002 240);
+    /* #F8FAFC - Near White */
+    --foreground: oklch(0.15 0.02 260);
+    /* #1E293B - Slate 800 */
+
+    --card: oklch(1 0 0);
+    /* White */
+    --card-foreground: oklch(0.15 0.02 260);
+
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.15 0.02 260);
+
+    --primary: oklch(0.65 0.18 240);
+    /* #0EA5E9 - Sky Blue */
+    --primary-foreground: oklch(1 0 0);
+
+    --secondary: oklch(0.96 0.01 240);
+    /* #F1F5F9 - Slate 100 */
+    --secondary-foreground: oklch(0.25 0.02 260);
+
+    --muted: oklch(0.96 0.01 240);
+    --muted-foreground: oklch(0.5 0.03 260);
+    /* #64748B - Slate 500 */
+
+    --accent: oklch(0.94 0.02 240);
+    /* #E2E8F0 - Slate 200 */
+    --accent-foreground: oklch(0.15 0.02 260);
+
+    --destructive: oklch(0.6 0.2 25);
+    --destructive-foreground: oklch(1 0 0);
+
+    --border: oklch(0.92 0.01 240);
+    /* #E2E8F0 - Slate 200 */
+    --input: oklch(0.92 0.01 240);
+    --ring: oklch(0.65 0.18 240);
+
+    /* Custom Tokens */
+    --grid-color: rgba(14, 165, 233, 0.1);
+    /* Sky Blue Grid */
+    --glow-color: rgba(14, 165, 233, 0.2);
+  }
+
+  .dark {
+    /* == DARK THEME (Immersive - Premium) == */
+    --background: oklch(0.12 0.02 260);
+    /* #0F172A - Slate 900 */
+    --foreground: oklch(0.98 0 0);
+    /* White */
+
+    --card: oklch(0.15 0.02 260);
+    /* Slate 900+ */
+    --card-foreground: oklch(0.98 0 0);
+
+    --popover: oklch(0.15 0.02 260);
+    --popover-foreground: oklch(0.98 0 0);
+
+    --primary: oklch(0.7 0.16 240);
+    /* Bright Sky Blue */
+    --primary-foreground: oklch(1 0 0);
+
+    --secondary: oklch(0.2 0.03 260);
+    /* Slate 800 */
+    --secondary-foreground: oklch(0.9 0 0);
+
+    --muted: oklch(0.2 0.03 260);
+    --muted-foreground: oklch(0.7 0.05 260);
+
+    --accent: oklch(0.25 0.05 250);
+    --accent-foreground: oklch(1 0 0);
+
+    --destructive: oklch(0.6 0.25 25);
+    --destructive-foreground: oklch(1 0 0);
+
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.7 0.16 240);
+
+    /* Custom Tokens */
+    --grid-color: rgba(56, 189, 248, 0.08);
+    --glow-color: rgba(56, 189, 248, 0.25);
+  }
+
+
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in skipped, var(--ring), transparent 50%);
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    /* Background handled by GlobalBackground component */
+    background-color: var(--background);
+    /* Mobile text alignment fix: ensure broad readability */
+    text-align: left;
+
+    /* Mobile Safe Area Insets to prevent overlap with notch/status bar */
+    /* Using max() to ensure at least some padding if env() is 0 or unsupported */
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+
+
+  }
+}
+
+/* SOLIDIFY BUTTONS: Override utilities to prevent transparency issues */
+@layer components {
+
+  /* Make outline buttons solid in dark mode to stand out */
+  .dark .button-outline {
+    background-color: rgba(15, 23, 42, 0.8) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+  }
+
+  /* Make secondary buttons more distinct */
+  .dark .button-secondary {
+    background-color: rgba(30, 41, 59, 1) !important;
+  }
+
+  /* Ensure text alignment in containers */
+  .container-fix {
+    @apply mx-auto px-6 max-w-7xl;
+  }
+}
+
+/* Glassmorphism Utilities */
+@layer utilities {
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl;
+  }
+
+  .glass-hover {
+    @apply hover:bg-white/10 hover:border-white/20 transition-all duration-300;
+  }
+
+  .animate-spin-slow {
+    animation: spin 8s linear infinite;
+  }
+
+  /* Hide Next.js Dev Indicator */
+  /* Hide Next.js Dev Indicator - Aggressive */
+  [data-nextjs-toast],
+  #nextjs-dev-indicator,
+  nextjs-portal,
+  body>div[data-nextjs-toast] {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  /* Additional safety for shadow dom containers if reachable */
+  .nextjs-toast-errors-parent {
+    display: none !important;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Global Typography Overrides */
+@layer base {
+  blockquote {
+    border-left-width: 4px;
+    border-color: var(--primary);
+    opacity: 0.8;
+    padding-left: 1.5rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-style: italic;
+    color: var(--muted-foreground);
+    background-color: var(--muted);
+    border-top-right-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+  }
+}
