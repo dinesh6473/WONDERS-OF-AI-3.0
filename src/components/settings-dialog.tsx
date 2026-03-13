@@ -176,7 +176,7 @@ export function SettingsDialog({ initialName = "", hasKey = false }: SettingsDia
                 </Tabs>
 
                 <div className="p-4 bg-zinc-900/30 border-t border-white/5 flex justify-center">
-                    <p className="text-[10px] text-zinc-600 uppercase tracking-widest font-medium">Learnify v1.0</p>
+                    <p className="text-[10px] text-zinc-600 uppercase tracking-widest font-medium">LearnX v1.0</p>
                 </div>
             </DialogContent>
         </Dialog>

@@ -14,12 +14,9 @@ export function LandingHero({ isLoggedIn }: { isLoggedIn?: boolean }) {
 
             {/* Floating Pill Navbar */}
             <nav className="sticky top-[calc(1.5rem+env(safe-area-inset-top))] inset-x-0 z-50 mx-auto max-w-5xl px-6 h-16 rounded-full border border-border/50 bg-background/70 backdrop-blur-xl shadow-lg shadow-black/5 flex items-center justify-between transition-all duration-300">
-                {/* Left: Branding */}
                 <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
-                        <span className="font-bold text-lg text-primary">L</span>
-                    </div>
-                    <span className="font-bold text-lg tracking-tight">Learnify</span>
+                    <img src="/logo.jpg" alt="LearnX Logo" className="h-9 w-9 rounded-full object-cover shadow-sm bg-white" />
+                    <span className="font-bold text-lg tracking-tight">LearnX</span>
                 </div>
 
                 {/* Center: Navigation Links (Desktop) */}
@@ -64,7 +61,7 @@ export function LandingHero({ isLoggedIn }: { isLoggedIn?: boolean }) {
                 </h1>
 
                 <p className="text-xl text-muted-foreground max-w-2xl mb-12 leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
-                    Stop random studying. Learnify uses advanced AI to break down complex subjects into interconnected nodes, instant quizzes, and mastery paths.
+                    Stop random studying. LearnX uses advanced AI to break down complex subjects into interconnected nodes, instant quizzes, and mastery paths.
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
@@ -96,7 +93,7 @@ export function LandingHero({ isLoggedIn }: { isLoggedIn?: boolean }) {
 
             <footer className="border-t border-border/40 bg-background/50 backdrop-blur-xl py-8 relative z-10">
                 <div className="container mx-auto px-6 text-center text-muted-foreground text-sm">
-                    &copy; {new Date().getFullYear()} Learnify. Engineered for Mastery.
+                    &copy; {new Date().getFullYear()} LearnX. Engineered for Mastery.
                 </div>
             </footer>
         </div >

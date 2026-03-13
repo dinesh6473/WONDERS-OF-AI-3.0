@@ -20,7 +20,7 @@ export function MethodologySection() {
                             <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 font-bold text-xl mb-2">01</div>
                             <h3 className="text-3xl font-bold text-foreground">Declare Intent</h3>
                             <p className="text-lg text-muted-foreground leading-relaxed">
-                                Simply tell Learnify what you want to master. No rigid syllabus—just your goal and our intelligence.
+                                Simply tell LearnX what you want to master. No rigid syllabus—just your goal and our intelligence.
                             </p>
                         </div>
                         <div className="w-full md:flex-1 relative group">

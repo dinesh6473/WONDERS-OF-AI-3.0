@@ -450,10 +450,15 @@ export async function generateTopics(subjectId: string) {
         })
 
         // Identify Roots (No dependencies pointing TO them)
-        topicsToInsert.forEach((t: any, idx: number) => {
-            // UNLOCK ALL by default to allow non-linear learning as requested by users.
-            // Original logic checked roots, but user feedback indicates preference for immediate access.
-            t.status = 'AVAILABLE'
+        const childIds = new Set(data.dependencies?.map((d: any) => d.to) || [])
+        
+        topicsToInsert.forEach((t: any) => {
+            const tempId = data.topics.find((topic: any) => topic.title === t.title)?.id
+            if (tempId && !childIds.has(tempId)) {
+                t.status = 'AVAILABLE'
+            } else {
+                t.status = 'LOCKED'
+            }
         })
 
         // Remove duplicates on insert just in case (checking against existingTitles strictly matches)

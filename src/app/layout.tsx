@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Learnify Rep",
+  title: "LearnX",
   description: "Advanced Learning Path Generator",
 };
 

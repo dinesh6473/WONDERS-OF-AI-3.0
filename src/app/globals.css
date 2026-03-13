@@ -118,15 +118,10 @@
     /* Mobile text alignment fix: ensure broad readability */
     text-align: left;
 
-    /* Mobile Safe Area Insets to prevent overlap with notch/status bar */
-    /* Using max() to ensure at least some padding if env() is 0 or unsupported */
-    padding-top: max(20px, env(safe-area-inset-top));
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
-    padding-left: max(16px, env(safe-area-inset-left));
-    padding-right: max(16px, env(safe-area-inset-right));
-
-
-  }
+    /* Mobile Safe Area Insets handled by components */
+    padding: 0;
+    margin: 0;
+}
 }
 
 /* SOLIDIFY BUTTONS: Override utilities to prevent transparency issues */
@@ -178,6 +173,14 @@
   /* Additional safety for shadow dom containers if reachable */
   .nextjs-toast-errors-parent {
     display: none !important;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 

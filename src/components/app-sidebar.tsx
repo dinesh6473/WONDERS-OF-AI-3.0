@@ -36,15 +36,20 @@ const navigation = [
 export function AppSidebar() {
     const pathname = usePathname()
     const [isOpen, setIsOpen] = useState(false)
+    const [isCollapsed, setIsCollapsed] = useState(true)
     const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
     return (
         <>
-            {/* Mobile Toggle Button */}
+            {/* Mobile/Desktop Toggle Button */}
             <Button
                 variant="ghost"
                 size="icon"
-                className="fixed top-[calc(1rem+env(safe-area-inset-top))] left-4 z-50 md:hidden text-white bg-zinc-900/50 backdrop-blur-md border border-white/10"
+                className={cn(
+                    "fixed top-[calc(1rem+env(safe-area-inset-top))] left-4 z-50 text-white bg-zinc-900/50 backdrop-blur-md border border-white/10 transition-all duration-300",
+                    "md:hidden", 
+                    !isCollapsed && "md:left-[17rem]"
+                )}
                 onClick={() => setIsOpen(true)}
             >
                 <Menu className="h-5 w-5" />
@@ -60,13 +65,14 @@ export function AppSidebar() {
 
             {/* Sidebar Container */}
             <div className={cn(
-                "flex flex-col py-6 h-screen z-50 transition-all duration-300 overflow-hidden group",
+                "flex flex-col h-screen z-50 transition-all duration-300 overflow-x-hidden",
                 "bg-black/80 backdrop-blur-xl border-r border-white/10",
                 // Mobile Styles
                 "fixed top-0 left-0 w-64 shadow-2xl shadow-black",
                 isOpen ? "translate-x-0" : "-translate-x-full",
                 // Desktop Styles (Override Mobile)
-                "md:sticky md:translate-x-0 md:top-0 md:w-20 md:hover:w-64 md:shadow-none"
+                "md:sticky md:translate-x-0 md:top-0",
+                isCollapsed ? "md:w-20" : "md:w-64 md:shadow-none"
             )}>
 
                 {/* Mobile Close Button */}
@@ -79,23 +85,38 @@ export function AppSidebar() {
                     <X className="h-5 w-5" />
                 </Button>
 
-                {/* Logo Area */}
-                <div className="mb-8 flex items-center justify-center w-full px-4 md:group-hover:justify-start md:group-hover:px-6 mt-8 md:mt-0">
-                    <div className="h-10 w-10 min-w-[2.5rem] bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20 shrink-0">
-                        <span className="font-bold text-xl text-white">L</span>
-                    </div>
-                    {/* Text: Visible on Mobile OR Desktop Hover */}
+                {/* Desktop Toggle Button */}
+                <div className={cn(
+                    "hidden md:flex py-4 transition-all duration-300",
+                    isCollapsed ? "justify-center px-0" : "justify-end px-4"
+                )}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-zinc-400 hover:text-white hover:bg-white/5 h-10 w-10"
+                        onClick={() => setIsCollapsed(!isCollapsed)}
+                    >
+                        <Menu className="h-5 w-5" />
+                    </Button>
+                </div>
+
+                <div className={cn(
+                    "mb-8 flex items-center w-full px-4 transition-all duration-300 mt-8 md:mt-0",
+                    isCollapsed ? "justify-center" : "justify-start px-6"
+                )}>
+                    <img src="/logo.jpg" alt="LearnX Logo" className="h-10 w-10 min-w-[2.5rem] rounded-xl object-cover shadow-lg bg-white shrink-0" />
+                    {/* Text: Visible on Mobile OR Desktop Expanded */}
                     <span className={cn(
-                        "ml-4 font-bold text-xl text-white transition-opacity duration-300 whitespace-nowrap",
-                        "md:opacity-0 md:group-hover:opacity-100", // Desktop hover logic
+                        "ml-4 font-bold text-xl text-white transition-all duration-300 whitespace-nowrap",
+                        isCollapsed ? "md:opacity-0 md:w-0" : "md:opacity-100 md:w-auto",
                         "opacity-100" // Always visible on mobile drawer
                     )}>
-                        Learnify
+                        LearnX
                     </span>
                 </div>
 
                 {/* Navigation Items */}
-                <nav className="flex-1 w-full px-3 space-y-2 overflow-y-auto no-scrollbar">
+                <nav className="flex-1 w-full px-3 space-y-2 overflow-y-auto overflow-x-hidden no-scrollbar">
                     {navigation.map((item) => {
                         const isActive = pathname === item.href
                         return (
@@ -107,18 +128,19 @@ export function AppSidebar() {
                                 <Button
                                     variant="ghost"
                                     className={cn(
-                                        "w-full flex items-center justify-start h-12 px-3 rounded-xl transition-all duration-200",
+                                        "w-full flex items-center h-12 rounded-xl transition-all duration-200",
+                                        isCollapsed ? "justify-center px-0" : "justify-start px-3",
                                         isActive
                                             ? "bg-blue-600/10 text-blue-400 hover:bg-blue-600/20"
                                             : "text-zinc-400 hover:text-white hover:bg-white/5",
-                                        !isActive && "md:hover:pl-4"
+                                        !isActive && !isCollapsed && "md:hover:pl-4"
                                     )}
                                 >
                                     <item.icon className={cn("h-6 w-6 min-w-[1.5rem] shrink-0", isActive ? "text-blue-400" : "text-zinc-400")} />
 
                                     <span className={cn(
-                                        "ml-4 font-medium transition-opacity duration-300 whitespace-nowrap",
-                                        "md:opacity-0 md:group-hover:opacity-100", // Desktop hover
+                                        "ml-4 font-medium transition-all duration-300 whitespace-nowrap",
+                                        isCollapsed ? "md:opacity-0 md:w-0" : "md:opacity-100 md:w-auto",
                                         "opacity-100", // Mobile always visible
                                         isActive ? "text-white" : "text-zinc-400"
                                     )}>
@@ -131,19 +153,22 @@ export function AppSidebar() {
                 </nav>
 
                 {/* Footer Actions */}
-                <div className="w-full px-3 mt-auto space-y-2">
+                <div className="w-full px-3 mt-auto mb-8 space-y-2">
                     <Button
                         variant="ghost"
                         onClick={() => setShowLogoutDialog(true)}
-                        className="w-full flex items-center justify-start h-12 px-3 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-red-950/20"
+                        className={cn(
+                            "w-full flex items-center h-12 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-red-950/20",
+                            isCollapsed ? "justify-center px-0" : "justify-start px-3"
+                        )}
                     >
                         <LogOut className="h-6 w-6 min-w-[1.5rem] shrink-0" />
                         <span className={cn(
-                            "ml-4 font-medium transition-opacity duration-300 whitespace-nowrap",
-                            "md:opacity-0 md:group-hover:opacity-100",
+                            "ml-4 font-medium transition-all duration-300 whitespace-nowrap",
+                            isCollapsed ? "md:opacity-0 md:w-0" : "md:opacity-100 md:w-auto",
                             "opacity-100"
                         )}>
-                            Log Out
+                            Sign Out
                         </span>
                     </Button>
                 </div>
