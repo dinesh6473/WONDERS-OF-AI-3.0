@@ -12,7 +12,8 @@ import {
     LogOut,
     Home,
     Menu,
-    X
+    X,
+    FileQuestion
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { logout } from '@/app/actions'
@@ -29,6 +30,7 @@ const navigation = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Community', href: '/dashboard/community', icon: Users },
+    { name: 'Quiz', href: '/dashboard/quiz', icon: FileQuestion },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
     { name: 'Profile', href: '/dashboard/profile', icon: User },
 ]

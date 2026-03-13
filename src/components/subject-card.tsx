@@ -51,15 +51,17 @@ export function SubjectCard({ id, title, description, isPublic }: SubjectCardPro
 
     return (
         <>
-            <Card className="bg-card border-white/10 hover:border-primary/50 transition-all group overflow-hidden relative flex flex-col h-full">
+            <Card className="bg-card border-white/10 hover:border-blue-500/50 hover:shadow-[0_0_30px_-5px_rgba(59,130,246,0.3)] transform-gpu hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 group overflow-hidden relative flex flex-col h-full">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
                 <Link href={`/dashboard/subject/${id}`} className="absolute inset-0 z-20" aria-label={`Open ${title}`} />
 
                 <CardHeader>
-                    <div className="flex items-start justify-between">
-                        <CardTitle className="truncate pr-4 text-xl">{title}</CardTitle>
-                        <BookOpen className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                    <div className="flex items-start justify-between overflow-hidden relative gap-2">
+                        <CardTitle className="text-xl roll-marquee-text pr-2">{title}</CardTitle>
+                        <div className="bg-card/80 backdrop-blur-sm z-10 pl-2">
+                             <BookOpen className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                        </div>
                     </div>
                     <CardDescription className="line-clamp-2 min-h-[2.5rem]">
                         {description || "No description provided."}

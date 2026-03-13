@@ -182,6 +182,29 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Rolling Marquee for Long Text */
+  .roll-marquee-text {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+  }
+
+  .group:hover .roll-marquee-text {
+    max-width: max-content;
+    text-overflow: clip;
+    animation: roll-marquee 3s linear infinite alternate;
+  }
+}
+
+@keyframes roll-marquee {
+  0%, 15% { transform: translateX(0); }
+  85%, 100% { 
+    transform: translateX(min(0px, calc(15rem - 100%))); 
+  }
 }
 
 @keyframes spin {

@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
-import { Sparkles, Loader2, Link as LinkIcon, Plus, Check } from 'lucide-react'
+import { Sparkles, Loader2, Link as LinkIcon, Plus, Check, FileQuestion } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 import { generateTopics, addTopic } from '@/app/actions'
 import { LinkTopicModal } from '@/components/link-topic-modal'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -83,6 +84,14 @@ export function SubjectHeaderActions({ subjectId, title, hasApiKey = false, isOw
 
             {/* Link Button (Topic Dependency) */}
             <LinkTopicModal subjectId={subjectId} />
+
+            {/* Quiz Button */}
+            <Link href={`/dashboard/quiz?subject_id=${subjectId}`}>
+                <Button size="sm" variant="outline" className="gap-2 border-white/10 hover:border-white/20 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10">
+                    <FileQuestion className="h-4 w-4" />
+                    Quiz
+                </Button>
+            </Link>
 
             {/* Add Topic Button */}
             <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>

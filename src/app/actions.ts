@@ -6,6 +6,12 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
+// Polyfill for DOMMatrix required by pdf-parse in Node.js/Next.js edge environments
+if (typeof global !== 'undefined' && !(global as any).DOMMatrix) {
+    (global as any).DOMMatrix = class DOMMatrix { };
+}
+const pdf = require('pdf-parse');
+
 // === AUTH & SETTINGS ===
 
 export async function logout() {
@@ -100,9 +106,39 @@ async function extractTextFromFile(file: File): Promise<string> {
 
     try {
         if (type === 'application/pdf' || name.endsWith('.pdf')) {
-            const pdf = require('pdf-parse');
-            const data = await pdf(buffer)
-            return data.text
+            let extractedText = ""
+            try {
+                const data = await pdf(buffer)
+                extractedText = data.text?.trim() || ""
+            } catch (pdfErr) {
+                console.warn("pdf-parse failed, falling back to OCR", pdfErr)
+            }
+            
+            // Fallback to Gemini OCR if text is basically empty (e.g. scanned images)
+            if (extractedText.length < 50) {
+                console.log("PDF seems empty or scanned. Using Gemini Vision for OCR...")
+                const apiKey = await getApiKeyInternal()
+                if (apiKey) {
+                    const genAI = new GoogleGenerativeAI(apiKey)
+                    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
+                    const prompt = "Extract all legible text from this document. Return ONLY the text, preserving the structure where possible."
+                    const pdfPart = {
+                        inlineData: {
+                            data: buffer.toString('base64'),
+                            mimeType: 'application/pdf'
+                        }
+                    }
+                    try {
+                        const result = await model.generateContent([prompt, pdfPart])
+                        extractedText = (await result.response).text()
+                    } catch (geminiErr) {
+                        console.error("Gemini OCR failed:", geminiErr)
+                    }
+                } else {
+                     console.warn("Skipping PDF OCR: No API Key found.")
+                }
+            }
+            return extractedText
         }
         else if (type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || name.endsWith('.docx')) {
             const mammoth = await import('mammoth');
@@ -852,7 +888,7 @@ export async function chatWithDashboardTutor(messages: { role: string, content: 
     }
 }
 
-export async function generateQuiz(topicId: string) {
+export async function generateTopicQuiz(topicId: string) {
     const supabase = await createClient()
 
     // 1. Get Topic Details
@@ -1245,4 +1281,222 @@ export async function cloneSubject(subjectId: string) {
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/community')
+}
+
+// === QUIZ SYSTEM ===
+
+export async function generateQuiz(params: {
+    subjectId?: string
+    subjectName: string
+    topics: string
+    difficulty: number
+    count: number
+}) {
+    const supabase = await createClient()
+    const response = await supabase.auth.getUser()
+    console.log("[generateQuiz auth response]:", response)
+    
+    if (response.error) {
+        console.error("[generateQuiz] Auth Error details:", response.error)
+    }
+
+    const user = response.data?.user
+    if (!user) throw new Error('Not authenticated')
+
+    const apiKey = await getApiKeyInternal()
+    if (!apiKey) throw new Error('API Key missing. Please set it in Settings.')
+
+    // 1. Fetch previous questions to build an EXCLUDE_LIST
+    // We only want to exclude questions from the same subject/topics to avoid getting too general.
+    let excludeContext = ""
+    try {
+        let query = supabase.from('quizzes').select('questions').eq('user_id', user.id)
+        if (params.subjectName) {
+            query = query.eq('subject_name', params.subjectName)
+        }
+        const { data: previousQuizzes } = await query
+        
+        if (previousQuizzes && previousQuizzes.length > 0) {
+            const previousQuestions: string[] = []
+            previousQuizzes.forEach(quiz => {
+                if (Array.isArray(quiz.questions)) {
+                    quiz.questions.forEach((q: any) => {
+                        if (q.question) previousQuestions.push(q.question)
+                    })
+                }
+            })
+            
+            // Limit exclude list so prompt doesn't get infinitely big, e.g. last 100 questions.
+            const limitedExclude = previousQuestions.slice(-100)
+            if (limitedExclude.length > 0) {
+                excludeContext = `\n\nEXCLUDE_LIST: DO NOT generate any of these exact questions again. You MUST create entirely NEW, unique questions:\n${JSON.stringify(limitedExclude)}`
+            }
+        }
+    } catch (e) {
+        console.warn("Failed to fetch previous questions for exclusion", e)
+    }
+
+    // 2. Build AI Prompt
+    const genAI = new GoogleGenerativeAI(apiKey)
+    const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "application/json" }
+    })
+
+    const prompt = `
+        Act as an Expert Quiz Master and University Evaluator.
+        Generate exactly ${params.count} questions for a quiz.
+        
+        CONTEXT:
+        Subject: ${params.subjectName}
+        Focus Topics: ${params.topics}
+        Difficulty Goal (1-5, where 1 = Beginner, 5 = Expert): ${params.difficulty}
+        ${excludeContext}
+        
+        Generate a mix of question formats to test deep understanding:
+        - "single_mcq" (Select exactly ONE correct answer out of 4 options)
+        - "multi_mcq" (Select Multiple correct answers out of 4-5 options)
+        - "fill_in_blank" (Provide a statement with a specific missing key term. Option array should be EMPTY. Correct answer must be a short 1-3 word exact phrase)
+        
+        REQUIREMENTS:
+        1. Return ONLY valid JSON matching this schema:
+        {
+          "questions": [
+             {
+               "type": "single_mcq" | "multi_mcq" | "fill_in_blank",
+               "question": "The question text or fill in the blank statement (use '_____' for the blank).",
+               "options": ["Option A", "Option B", "Option C", "Option D"] (Only for MCQs, otherwise empty array),
+               "correct_answer": "Option B" (for single_mcq/fill_in_blank) OR ["Option A", "Option C"] (for multi_mcq),
+               "explanation": "Detailed explanation of why this is correct AND why typical wrong answers are wrong.",
+               "difficulty_label": "Easy" | "Medium" | "Hard"
+             }
+          ]
+        }
+        
+        2. Ensure absolute correctness.
+        3. Match the difficulty goal. If difficulty is 5, ask highly advanced, specific, nuanced questions. If 1, ask fundamental definitions.
+        4. NO MARKDOWN wrapping in the output. ONLY raw JSON. Do NOT include \`\`\`json.
+    `
+
+    try {
+        const result = await model.generateContent(prompt)
+        const response = await result.response
+        let text = response.text()
+        
+        // Find the first { and last } to extract just the JSON object in case of conversational wrapper
+        const firstBrace = text.indexOf('{')
+        const lastBrace = text.lastIndexOf('}')
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            text = text.substring(firstBrace, lastBrace + 1)
+        }
+        
+        const jsonStr = text.replace(/```json\n|\n```/g, "").replace(/```/g, "").trim()
+        
+        let quizData
+        try {
+            quizData = JSON.parse(jsonStr)
+        } catch (parseErr) {
+            console.error("AI response JSON parse error:", text)
+            
+            // Last resort: if the AI passed an array directly instead of { "questions": [...] }
+            if (text.trim().startsWith('[')) {
+                try {
+                    const firstBracket = text.indexOf('[')
+                    const lastBracket = text.lastIndexOf(']')
+                    const arrayStr = text.substring(firstBracket, lastBracket + 1)
+                    
+                    const directArray = JSON.parse(arrayStr)
+                    if (Array.isArray(directArray)) {
+                        quizData = { questions: directArray }
+                    }
+                } catch (arrayParseErr) {
+                    throw new Error("AI returned invalid JSON formatting: " + text.substring(0, 100))
+                }
+            } else {
+                throw new Error("AI returned invalid JSON formatting. Please try again.")
+            }
+        }
+
+        if (!quizData.questions || !Array.isArray(quizData.questions) || quizData.questions.length === 0) {
+            throw new Error('AI failed to generate question array')
+        }
+
+        // 3. Save to DB
+        const newQuizId = crypto.randomUUID()
+        const { error: insertError } = await supabase
+            .from('quizzes')
+            .insert({
+                id: newQuizId,
+                user_id: user.id,
+                subject_name: params.subjectName,
+                difficulty: params.difficulty,
+                topics: { raw: params.topics },
+                questions: quizData.questions
+            })
+
+        if (insertError) {
+            console.error("DB Insert Error:", insertError)
+            throw new Error(`Failed to save quiz: ${insertError.message}`)
+        }
+
+        return newQuizId
+
+    } catch (e: any) {
+        console.error("Quiz generation failed:", e)
+        throw new Error(e.message || "Failed to communicate with AI.")
+    }
+}
+
+export async function submitQuiz(quizId: string, userAnswers: Record<number, any>, questions: any[]) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    let score = 0
+    const total = questions.length
+
+    // Evaluate answers
+    for (let i = 0; i < total; i++) {
+        const q = questions[i]
+        const userAnswer = userAnswers[i]
+        
+        if (q.type === 'single_mcq' || q.type === 'fill_in_blank') {
+            // Case-insensitive string matching for fill_in_blank just in case
+            const normalizedUser = String(userAnswer || "").trim().toLowerCase()
+            const normalizedCorrect = String(q.correct_answer || "").trim().toLowerCase()
+            
+            if (normalizedUser === normalizedCorrect && normalizedUser !== "") {
+                score++
+            }
+        } else if (q.type === 'multi_mcq') {
+            const userArr = Array.isArray(userAnswer) ? userAnswer : []
+            const correctArr = Array.isArray(q.correct_answer) ? q.correct_answer : []
+            
+            // Exact match of arrays (independent of order)
+            if (userArr.length === correctArr.length && userArr.length > 0) {
+                const isMatch = userArr.every(val => correctArr.includes(val))
+                if (isMatch) score++
+            }
+        }
+    }
+
+    // Save to DB
+    const resultId = crypto.randomUUID()
+    const { error } = await supabase
+        .from('quiz_results')
+        .insert({
+            id: resultId,
+            quiz_id: quizId,
+            user_id: user.id,
+            score: score,
+            total_questions: total,
+            user_answers: userAnswers
+        })
+
+    if (error) {
+        console.error("DB Insert Result Error:", error)
+        throw new Error("Failed to save quiz results.")
+    }
+
+    return resultId
 }

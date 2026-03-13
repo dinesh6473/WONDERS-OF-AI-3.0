@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Loader2, CheckCircle2, XCircle, ArrowRight, Trophy } from "lucide-react"
-import { generateQuiz } from "@/app/actions"
+import { generateTopicQuiz } from "@/app/actions"
 import { cn } from "@/lib/utils"
 
 interface QuizModalProps {
@@ -47,7 +47,7 @@ export function QuizModal({ isOpen, onOpenChange, topicId, topicTitle }: QuizMod
     const startQuiz = async () => {
         setLoading(true)
         try {
-            const generatedQuestions = await generateQuiz(topicId)
+            const generatedQuestions = await generateTopicQuiz(topicId)
             if (generatedQuestions) {
                 setQuestions(generatedQuestions)
                 setQuizStarted(true)
