@@ -56,7 +56,7 @@ export function DashboardHeader({ profile }: DashboardHeaderProps) {
                         {profile?.avatar_url ? (
                             <img 
                                 src={profile.avatar_url} 
-                                alt={profile.full_name} 
+                                alt={profile.full_name || 'User'} 
                                 className="h-full w-full rounded-full object-cover"
                             />
                         ) : (

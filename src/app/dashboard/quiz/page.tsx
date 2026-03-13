@@ -40,8 +40,13 @@ function formatTopics(raw: unknown) {
   if (Array.isArray(raw)) {
     return raw.map((item) => String(item)).filter(Boolean)
   }
-  if (typeof raw === "object" && typeof raw.raw === "string") {
-    return raw.raw
+  if (
+    typeof raw === "object" &&
+    raw !== null &&
+    "raw" in raw &&
+    typeof (raw as { raw: unknown }).raw === "string"
+  ) {
+    return (raw as { raw: string }).raw
       .split(",")
       .map((item: string) => item.trim())
       .filter(Boolean)

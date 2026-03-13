@@ -280,7 +280,7 @@ export function QuizDashboardView({
                       borderRadius: "1rem",
                       color: "#fff",
                     }}
-                    formatter={(value: number) => [`${value}%`, "Score"]}
+                    formatter={(value) => [`${value ?? 0}%`, "Score"]}
                   />
                   <Bar dataKey="score" radius={[10, 10, 0, 0]} fill="#60a5fa" />
                 </BarChart>
