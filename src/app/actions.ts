@@ -110,6 +110,183 @@ async function getApiKeyForUserId(userId: string) {
     return data?.gemini_api_key || null
 }
 
+type GeneratedQuizQuestion = {
+    type: 'single_mcq' | 'multi_mcq' | 'fill_in_blank'
+    question: string
+    options: string[]
+    correct_answer: string | string[]
+    explanation: string
+    difficulty_label: 'Easy' | 'Medium' | 'Hard'
+}
+
+function normalizeQuestionKey(question: string) {
+    return question
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .replace(/[^\w\s]/g, '')
+        .trim()
+}
+
+function parseGeneratedQuizResponse(text: string): { questions: GeneratedQuizQuestion[] } {
+    let normalizedText = text
+
+    const firstBrace = normalizedText.indexOf('{')
+    const lastBrace = normalizedText.lastIndexOf('}')
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        normalizedText = normalizedText.substring(firstBrace, lastBrace + 1)
+    }
+
+    const jsonStr = normalizedText.replace(/```json\n|\n```/g, "").replace(/```/g, "").trim()
+
+    try {
+        return JSON.parse(jsonStr)
+    } catch {
+        if (normalizedText.trim().startsWith('[')) {
+            const firstBracket = normalizedText.indexOf('[')
+            const lastBracket = normalizedText.lastIndexOf(']')
+            const arrayStr = normalizedText.substring(firstBracket, lastBracket + 1)
+            const directArray = JSON.parse(arrayStr)
+            if (Array.isArray(directArray)) {
+                return { questions: directArray as GeneratedQuizQuestion[] }
+            }
+        }
+        throw new Error("AI returned invalid JSON formatting. Please try again.")
+    }
+}
+
+async function generateUniqueQuizQuestions(params: {
+    model: any
+    subjectName: string
+    topics: string
+    difficulty: number
+    count: number
+    blockedQuestions: string[]
+    seenDifficultyLabels?: string[]
+}) {
+    const finalQuestions: GeneratedQuizQuestion[] = []
+    const generatedKeys = new Set<string>()
+    const blockedQuestionKeys = new Set(params.blockedQuestions.map(normalizeQuestionKey))
+    const batchSize = Math.min(16, Math.max(6, Math.ceil(params.count / 4)))
+    const concurrency = params.count >= 40 ? 3 : 2
+    const maxRounds = Math.max(4, Math.ceil(params.count / batchSize) * 3)
+
+    const createPrompt = (
+        requestCount: number,
+        blockedCurrent: string[],
+        blockedPrevious: string[],
+        strict: boolean
+    ) => `
+Generate exactly ${requestCount} UNIQUE quiz questions as raw JSON.
+
+Subject: ${params.subjectName}
+Topics: ${params.topics || "General coverage"}
+Difficulty: ${params.difficulty}/5
+Seen difficulty labels so far: ${JSON.stringify(params.seenDifficultyLabels || [])}
+
+${strict ? `Never repeat or closely paraphrase questions from these blocked sets:
+Existing bank: ${JSON.stringify(blockedPrevious)}
+Current batch: ${JSON.stringify(blockedCurrent)}` : `Avoid obvious duplicates and keep every question meaningfully different from the others in this response.`}
+
+Use a balanced mix of:
+- single_mcq: exactly 4 options, one correct answer
+- multi_mcq: 4 or 5 options, multiple correct answers
+- fill_in_blank: use "_____", options must be []
+
+Return only:
+{"questions":[{"type":"single_mcq|multi_mcq|fill_in_blank","question":"...","options":["..."],"correct_answer":"..." ,"explanation":"Brief but clear explanation.","difficulty_label":"Easy|Medium|Hard"}]}
+
+Rules:
+- no markdown
+- no extra text
+- factually correct
+- match requested difficulty
+- keep explanations concise
+- every question must be meaningfully different
+    `
+
+    for (let round = 0; round < maxRounds && finalQuestions.length < params.count; round++) {
+        const remaining = params.count - finalQuestions.length
+        const strictMode = round < Math.max(2, Math.ceil(maxRounds / 2))
+        const previousBlocked = strictMode ? params.blockedQuestions.slice(-24) : []
+        const currentBlocked = strictMode ? finalQuestions.slice(-16).map(q => q.question) : []
+        const jobs: Promise<{ questions: GeneratedQuizQuestion[] } | null>[] = []
+        let remainingForRound = remaining
+
+        for (let slot = 0; slot < concurrency && remainingForRound > 0; slot++) {
+            const requestCount = Math.min(batchSize, remainingForRound)
+            remainingForRound -= requestCount
+            const prompt = createPrompt(requestCount, currentBlocked, previousBlocked, strictMode)
+
+            jobs.push(
+                params.model.generateContent(prompt)
+                    .then((result: any) => result.response)
+                    .then((response: any) => parseGeneratedQuizResponse(response.text()))
+                    .catch((error: unknown) => {
+                        console.warn("Quiz generation batch failed", error)
+                        return null
+                    })
+            )
+        }
+
+        const batchResults = await Promise.all(jobs)
+
+        for (const batchResult of batchResults) {
+            if (!batchResult?.questions || !Array.isArray(batchResult.questions)) continue
+
+            for (const rawQuestion of batchResult.questions) {
+                if (!rawQuestion || typeof rawQuestion.question !== 'string') continue
+                const key = normalizeQuestionKey(rawQuestion.question)
+                if (!key || blockedQuestionKeys.has(key) || generatedKeys.has(key)) continue
+
+                generatedKeys.add(key)
+                finalQuestions.push(rawQuestion)
+
+                if (finalQuestions.length === params.count) {
+                    break
+                }
+            }
+
+            if (finalQuestions.length === params.count) break
+        }
+    }
+
+    if (finalQuestions.length === 0) {
+        const fallbackPrompt = `
+Generate exactly ${params.count} quiz questions as raw JSON.
+
+Subject: ${params.subjectName}
+Topics: ${params.topics || "General coverage"}
+Difficulty: ${params.difficulty}/5
+Seen difficulty labels so far: ${JSON.stringify(params.seenDifficultyLabels || [])}
+
+Return only:
+{"questions":[{"type":"single_mcq|multi_mcq|fill_in_blank","question":"...","options":["..."],"correct_answer":"..." ,"explanation":"Brief but clear explanation.","difficulty_label":"Easy|Medium|Hard"}]}
+
+Rules:
+- no markdown
+- no extra text
+- factually correct
+- every question must be clearly distinct from the others
+- keep explanations concise
+        `
+
+        const fallbackResult = await params.model.generateContent(fallbackPrompt)
+        const fallbackResponse = await fallbackResult.response
+        const fallbackQuizData = parseGeneratedQuizResponse(fallbackResponse.text())
+
+        for (const rawQuestion of fallbackQuizData.questions || []) {
+            if (!rawQuestion || typeof rawQuestion.question !== 'string') continue
+            const key = normalizeQuestionKey(rawQuestion.question)
+            if (!key || blockedQuestionKeys.has(key) || generatedKeys.has(key)) continue
+            generatedKeys.add(key)
+            finalQuestions.push(rawQuestion)
+            if (finalQuestions.length === params.count) break
+        }
+    }
+
+    return finalQuestions
+}
+
 async function extractTextFromFile(file: File): Promise<string> {
     const buffer = Buffer.from(await file.arrayBuffer())
     const type = file.type
@@ -1305,48 +1482,43 @@ export async function generateQuiz(params: {
 }) {
     const supabase = await createClient()
     const response = await supabase.auth.getUser()
-    console.log("[generateQuiz auth response]:", response)
-    
-    if (response.error) {
-        console.error("[generateQuiz] Auth Error details:", response.error)
-    }
 
     const user = response.data?.user
     if (!user) throw new Error('Not authenticated')
+    if (!Number.isFinite(params.count) || params.count < 1) {
+        throw new Error('Question count must be a positive number.')
+    }
 
     const apiKey = await getApiKeyForUserId(user.id)
     if (!apiKey) throw new Error('API Key missing. Please set it in Settings.')
 
     // 1. Fetch previous questions to build an EXCLUDE_LIST
     // We only want to exclude questions from the same subject/topics to avoid getting too general.
-    let excludeContext = ""
+    const existingQuestionSamples: string[] = []
     try {
         let query = supabase
             .from('quizzes')
             .select('questions')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
-            .limit(6)
+            .limit(80)
         if (params.subjectName) {
             query = query.eq('subject_name', params.subjectName)
         }
         const { data: previousQuizzes } = await query
         
         if (previousQuizzes && previousQuizzes.length > 0) {
-            const previousQuestions: string[] = []
             previousQuizzes.forEach(quiz => {
                 if (Array.isArray(quiz.questions)) {
-                    quiz.questions.forEach((q: any) => {
-                        if (q.question) previousQuestions.push(q.question)
+                    quiz.questions.forEach((q) => {
+                        if (q && typeof q === 'object' && 'question' in q && typeof q.question === 'string') {
+                            if (existingQuestionSamples.length < 60) {
+                                existingQuestionSamples.push(q.question)
+                            }
+                        }
                     })
                 }
             })
-            
-            // Keep the prompt small so generation starts faster.
-            const limitedExclude = previousQuestions.slice(0, 24)
-            if (limitedExclude.length > 0) {
-                excludeContext = `\nAvoid reusing these exact questions: ${JSON.stringify(limitedExclude)}`
-            }
         }
     } catch (e) {
         console.warn("Failed to fetch previous questions for exclusion", e)
@@ -1359,71 +1531,20 @@ export async function generateQuiz(params: {
         generationConfig: { responseMimeType: "application/json" }
     })
 
-    const prompt = `
-Generate exactly ${params.count} quiz questions as raw JSON.
-
-Subject: ${params.subjectName}
-Topics: ${params.topics || "General coverage"}
-Difficulty: ${params.difficulty}/5
-${excludeContext}
-
-Use a balanced mix of:
-- single_mcq: exactly 4 options, one correct answer
-- multi_mcq: 4 or 5 options, multiple correct answers
-- fill_in_blank: use "_____", options must be []
-
-Return only:
-{"questions":[{"type":"single_mcq|multi_mcq|fill_in_blank","question":"...","options":["..."],"correct_answer":"..." ,"explanation":"Brief but clear explanation.","difficulty_label":"Easy|Medium|Hard"}]}
-
-Rules:
-- no markdown
-- no extra text
-- factually correct
-- match requested difficulty
-- keep explanations concise
-    `
-
     try {
-        const result = await model.generateContent(prompt)
-        const response = await result.response
-        let text = response.text()
-        
-        // Find the first { and last } to extract just the JSON object in case of conversational wrapper
-        const firstBrace = text.indexOf('{')
-        const lastBrace = text.lastIndexOf('}')
-        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-            text = text.substring(firstBrace, lastBrace + 1)
-        }
-        
-        const jsonStr = text.replace(/```json\n|\n```/g, "").replace(/```/g, "").trim()
-        
-        let quizData
-        try {
-            quizData = JSON.parse(jsonStr)
-        } catch (parseErr) {
-            console.error("AI response JSON parse error:", text)
-            
-            // Last resort: if the AI passed an array directly instead of { "questions": [...] }
-            if (text.trim().startsWith('[')) {
-                try {
-                    const firstBracket = text.indexOf('[')
-                    const lastBracket = text.lastIndexOf(']')
-                    const arrayStr = text.substring(firstBracket, lastBracket + 1)
-                    
-                    const directArray = JSON.parse(arrayStr)
-                    if (Array.isArray(directArray)) {
-                        quizData = { questions: directArray }
-                    }
-                } catch (arrayParseErr) {
-                    throw new Error("AI returned invalid JSON formatting: " + text.substring(0, 100))
-                }
-            } else {
-                throw new Error("AI returned invalid JSON formatting. Please try again.")
-            }
-        }
+        const initialBatchCount = Math.min(params.count, 20)
+        const initialQuestions = await generateUniqueQuizQuestions({
+            model,
+            subjectName: params.subjectName,
+            topics: params.topics,
+            difficulty: params.difficulty,
+            count: initialBatchCount,
+            blockedQuestions: existingQuestionSamples,
+            seenDifficultyLabels: []
+        })
 
-        if (!quizData.questions || !Array.isArray(quizData.questions) || quizData.questions.length === 0) {
-            throw new Error('AI failed to generate question array')
+        if (initialQuestions.length !== initialBatchCount) {
+            throw new Error(`Could only generate ${initialQuestions.length} unique questions out of ${initialBatchCount}. Try again or reduce the count.`)
         }
 
         // 3. Save to DB
@@ -1436,8 +1557,13 @@ Rules:
                 subject_id: params.subjectId || null,
                 subject_name: params.subjectName,
                 difficulty: params.difficulty,
-                topics: { raw: params.topics },
-                questions: quizData.questions
+                topics: {
+                    raw: params.topics,
+                    target_count: params.count,
+                    generation_mode: 'progressive',
+                    initial_batch_size: initialBatchCount,
+                },
+                questions: initialQuestions
             })
 
         if (insertError) {
@@ -1453,18 +1579,89 @@ Rules:
     }
 }
 
-export async function submitQuiz(quizId: string, userAnswers: Record<number, any>, questions: any[]) {
+export async function generateMoreQuizQuestions(params: {
+    quizId: string
+    currentQuestions: GeneratedQuizQuestion[]
+    desiredCount: number
+}) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data: quiz, error } = await supabase
+        .from('quizzes')
+        .select('subject_name, difficulty, topics')
+        .eq('id', params.quizId)
+        .eq('user_id', user.id)
+        .single()
+
+    if (error || !quiz) {
+        throw new Error('Quiz not found.')
+    }
+
+    const apiKey = await getApiKeyForUserId(user.id)
+    if (!apiKey) throw new Error('API Key missing. Please set it in Settings.')
+
+    const genAI = new GoogleGenerativeAI(apiKey)
+    const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "application/json" }
+    })
+
+    const blockedQuestions = params.currentQuestions.map(q => q.question)
+    const seenDifficultyLabels = params.currentQuestions.map(q => q.difficulty_label)
+    const newQuestions = await generateUniqueQuizQuestions({
+        model,
+        subjectName: quiz.subject_name,
+        topics: typeof quiz.topics === 'object' && quiz.topics !== null && 'raw' in quiz.topics
+            ? String((quiz.topics as { raw?: unknown }).raw || '')
+            : '',
+        difficulty: quiz.difficulty,
+        count: params.desiredCount,
+        blockedQuestions,
+        seenDifficultyLabels
+    })
+
+    if (newQuestions.length === 0) {
+        throw new Error('Could not generate more unique questions right now. Please continue or try again.')
+    }
+
+    const updatedQuestions = [...params.currentQuestions, ...newQuestions]
+    const { error: updateError } = await supabase
+        .from('quizzes')
+        .update({ questions: updatedQuestions })
+        .eq('id', params.quizId)
+        .eq('user_id', user.id)
+
+    if (updateError) {
+        throw new Error(`Failed to extend quiz: ${updateError.message}`)
+    }
+
+    return newQuestions
+}
+
+export async function submitQuiz(
+    quizId: string,
+    userAnswers: Record<number, any>,
+    questions: any[],
+    visitedQuestionIndexes: number[]
+) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
     let score = 0
-    const total = questions.length
+    const total = visitedQuestionIndexes.length
+
+    const evaluatedQuestions = visitedQuestionIndexes
+        .map(index => questions[index])
+        .filter(Boolean)
 
     // Evaluate answers
-    for (let i = 0; i < total; i++) {
-        const q = questions[i]
-        const userAnswer = userAnswers[i]
+    for (let i = 0; i < visitedQuestionIndexes.length; i++) {
+        const questionIndex = visitedQuestionIndexes[i]
+        const q = questions[questionIndex]
+        const userAnswer = userAnswers[questionIndex]
         
         if (q.type === 'single_mcq' || q.type === 'fill_in_blank') {
             // Case-insensitive string matching for fill_in_blank just in case
@@ -1496,7 +1693,11 @@ export async function submitQuiz(quizId: string, userAnswers: Record<number, any
             user_id: user.id,
             score: score,
             total_questions: total,
-            user_answers: userAnswers
+            user_answers: {
+                answers: userAnswers,
+                visited_question_indexes: visitedQuestionIndexes,
+                evaluated_questions: evaluatedQuestions,
+            }
         })
 
     if (error) {

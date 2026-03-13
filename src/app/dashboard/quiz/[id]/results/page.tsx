@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { AlertTriangle, CheckCircle2, XCircle, ArrowRight, BarChart3, RefreshCcw } from "lucide-react"
+import { AlertTriangle, CheckCircle2, XCircle, ArrowLeft, ArrowRight, BarChart3, RefreshCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export default async function QuizResultsPage({ 
@@ -43,7 +43,15 @@ export default async function QuizResultsPage({
 
     const { score, total_questions, user_answers } = quizResult
     const percentage = Math.round((score / total_questions) * 100)
-    const questions = quizResult.quizzes.questions
+    const answersMap = user_answers?.answers ?? user_answers ?? {}
+    const visitedQuestionIndexes = Array.isArray(user_answers?.visited_question_indexes)
+        ? user_answers.visited_question_indexes
+        : []
+    const questions = Array.isArray(user_answers?.evaluated_questions)
+        ? user_answers.evaluated_questions
+        : (visitedQuestionIndexes.length > 0
+            ? visitedQuestionIndexes.map((index: number) => quizResult.quizzes.questions[index]).filter(Boolean)
+            : quizResult.quizzes.questions)
 
     // Determine performance color
     let colorClass = "text-green-500"
@@ -58,9 +66,18 @@ export default async function QuizResultsPage({
 
     return (
         <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
-            <div className="flex items-center gap-3 text-blue-400 mb-8">
-                <BarChart3 className="h-6 w-6" />
-                <h1 className="text-2xl font-bold text-white">Quiz Analytics</h1>
+            <div className="flex items-center justify-between gap-4 mb-8">
+                <div className="flex items-center gap-3 text-blue-400">
+                    <BarChart3 className="h-6 w-6" />
+                    <h1 className="text-2xl font-bold text-white">Quiz Analytics</h1>
+                </div>
+
+                <Link href="/dashboard/quiz">
+                    <button className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-zinc-200 transition-all hover:bg-white/10 hover:text-white">
+                        <ArrowLeft className="w-4 h-4" />
+                        Back to Quiz Page
+                    </button>
+                </Link>
             </div>
 
             {/* Score Summary */}
@@ -88,7 +105,9 @@ export default async function QuizResultsPage({
                     correct_answer: string | string[]
                     explanation: string
                 }, index: number) => {
-                    const userAnswer = user_answers[index]
+                    const userAnswer = visitedQuestionIndexes.length > 0
+                        ? answersMap[visitedQuestionIndexes[index]]
+                        : answersMap[index]
                     const isMulti = q.type === 'multi_mcq'
                     
                     // Logic to check correctness to show X or Check mark locally

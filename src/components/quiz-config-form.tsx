@@ -178,12 +178,14 @@ export function QuizConfigForm({ initialSubject, initialTopics }: QuizConfigForm
                             id="count"
                             type="number"
                             min="1"
-                            max="50"
                             required
                             value={questionCount}
                             onChange={(e) => setQuestionCount(e.target.value)}
                             className="bg-black/50 border-white/10 text-white focus-visible:ring-blue-500"
                         />
+                        <p className="text-xs text-zinc-500">
+                            Enter any positive number. We will keep generating until that exact count is reached with no duplicates.
+                        </p>
                     </div>
                 </div>
             </div>

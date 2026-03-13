@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { submitQuiz } from '@/app/actions'
+import { generateMoreQuizQuestions, submitQuiz } from '@/app/actions'
 import { Loader2, ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -16,14 +16,19 @@ export function QuizTakeFlow({ quiz }: QuizTakeFlowProps) {
     const router = useRouter()
     const [isSubmitting, startTransition] = useTransition()
     const [currentIndex, setCurrentIndex] = useState(0)
-    const [isCurrentAnswerChecked, setIsCurrentAnswerChecked] = useState(false)
+    const [checkedQuestions, setCheckedQuestions] = useState<Record<number, boolean>>({})
+    const [questions, setQuestions] = useState(quiz.questions || [])
+    const [isLoadingMore, setIsLoadingMore] = useState(false)
+    const visitedQuestionIndexesRef = useRef<Set<number>>(new Set([0]))
     
     // Store user answers keyed by question index.
     // For single_mcq/fill_in: string. For multi_mcq: string[]
     const [answers, setAnswers] = useState<Record<number, any>>({})
 
-    const questions = quiz.questions || []
     const total = questions.length
+    const targetCount = typeof quiz.topics?.target_count === 'number'
+        ? quiz.topics.target_count
+        : questions.length
     
     // Short-circuit if empty
     if (total === 0) {
@@ -31,6 +36,11 @@ export function QuizTakeFlow({ quiz }: QuizTakeFlowProps) {
     }
 
     const currentQuestion = questions[currentIndex]
+    const isCurrentAnswerChecked = !!checkedQuestions[currentIndex]
+
+    useEffect(() => {
+        visitedQuestionIndexesRef.current.add(currentIndex)
+    }, [currentIndex])
 
     function handleSingleSelect(option: string) {
         if (isCurrentAnswerChecked) return
@@ -57,21 +67,57 @@ export function QuizTakeFlow({ quiz }: QuizTakeFlowProps) {
     function handleNext() {
         if (currentIndex < total - 1) {
             setCurrentIndex(prev => prev + 1)
-            setIsCurrentAnswerChecked(false)
         }
     }
 
     function handlePrev() {
         if (currentIndex > 0) {
             setCurrentIndex(prev => prev - 1)
-            setIsCurrentAnswerChecked(true) // If going back, we assume they checked it already
         }
     }
+
+    function handleCheckCurrentAnswer() {
+        setCheckedQuestions(prev => ({ ...prev, [currentIndex]: true }))
+    }
+
+    async function ensureMoreQuestions() {
+        if (isLoadingMore || questions.length >= targetCount) return
+
+        setIsLoadingMore(true)
+        try {
+            const desiredCount = Math.min(20, targetCount - questions.length)
+            const moreQuestions = await generateMoreQuizQuestions({
+                quizId: quiz.id,
+                currentQuestions: questions,
+                desiredCount,
+            })
+
+            if (moreQuestions.length > 0) {
+                setQuestions((prev: any[]) => [...prev, ...moreQuestions])
+            }
+        } catch (error) {
+            console.error('Failed to load more questions:', error)
+        } finally {
+            setIsLoadingMore(false)
+        }
+    }
+
+    useEffect(() => {
+        const remainingVisible = questions.length - currentIndex - 1
+        if (remainingVisible <= 5 && questions.length < targetCount) {
+            void ensureMoreQuestions()
+        }
+    }, [currentIndex, questions.length, targetCount])
 
     function handleSubmit() {
         startTransition(async () => {
              try {
-                const resultId = await submitQuiz(quiz.id, answers, questions)
+                const resultId = await submitQuiz(
+                    quiz.id,
+                    answers,
+                    questions,
+                    Array.from(visitedQuestionIndexesRef.current).sort((a, b) => a - b)
+                )
                 router.push(`/dashboard/quiz/${quiz.id}/results?result_id=${resultId}`)
              } catch (e: any) {
                  console.error("Submission failed", e)
@@ -104,25 +150,35 @@ export function QuizTakeFlow({ quiz }: QuizTakeFlowProps) {
             <div className="mb-8">
                 <div className="flex justify-between items-center mb-4">
                     <div className="flex flex-col">
-                        <span className="text-zinc-400 text-sm font-medium">Question {currentIndex + 1} of {total}</span>
+                        <span className="text-zinc-400 text-sm font-medium">
+                            Question {currentIndex + 1} of {Math.max(total, targetCount)}
+                        </span>
                         <span className="uppercase text-[10px] tracking-wider mt-1 px-2 py-0.5 rounded bg-white/5 border border-white/10 w-fit text-zinc-500">
                             {currentQuestion.difficulty_label || "Standard"}
                         </span>
                     </div>
-                    <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={handleSubmit}
-                        disabled={isSubmitting}
-                        className="text-red-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 font-bold"
-                    >
-                        Finish Quiz
-                    </Button>
+                    <div className="flex items-center gap-3">
+                        {isLoadingMore && (
+                            <div className="flex items-center gap-2 text-xs text-blue-300">
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                Loading more
+                            </div>
+                        )}
+                        <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={handleSubmit}
+                            disabled={isSubmitting}
+                            className="text-red-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 font-bold"
+                        >
+                            Finish Quiz
+                        </Button>
+                    </div>
                 </div>
                 <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                     <div 
                         className="h-full bg-blue-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]"
-                        style={{ width: `${((currentIndex + 1) / total) * 100}%` }}
+                        style={{ width: `${(visitedQuestionIndexesRef.current.size / Math.max(targetCount, 1)) * 100}%` }}
                     />
                 </div>
             </div>
@@ -290,7 +346,7 @@ export function QuizTakeFlow({ quiz }: QuizTakeFlowProps) {
                     {/* Only show Submit if not yet checked */}
                     {!isCurrentAnswerChecked && (
                         <Button 
-                            onClick={() => setIsCurrentAnswerChecked(true)}
+                            onClick={handleCheckCurrentAnswer}
                             disabled={!currentAnswer || (Array.isArray(currentAnswer) && currentAnswer.length === 0)}
                             className="h-12 bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-900/20 group px-10 rounded-xl font-bold transition-all hover:scale-105 active:scale-95"
                         >
@@ -299,7 +355,7 @@ export function QuizTakeFlow({ quiz }: QuizTakeFlowProps) {
                         </Button>
                     )}
 
-                    {!isLast ? (
+                    {currentIndex < total - 1 ? (
                         <Button 
                             onClick={handleNext}
                             variant={isCurrentAnswerChecked ? "default" : "outline"}
@@ -315,18 +371,18 @@ export function QuizTakeFlow({ quiz }: QuizTakeFlowProps) {
                         </Button>
                     ) : (
                         <Button 
-                            onClick={handleSubmit}
-                            disabled={isSubmitting}
+                            onClick={questions.length < targetCount ? ensureMoreQuestions : handleSubmit}
+                            disabled={isSubmitting || isLoadingMore}
                             className="h-12 bg-green-600 hover:bg-green-500 text-white shadow-xl shadow-green-900/20 group px-10 rounded-xl font-bold transition-all hover:scale-105 active:scale-95"
                         >
-                            {isSubmitting ? (
+                            {isSubmitting || isLoadingMore ? (
                                 <>
                                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Finalizing...
+                                    {isLoadingMore ? 'Loading More...' : 'Finalizing...'}
                                 </>
                             ) : (
                                 <>
-                                    Complete Quiz
+                                    {questions.length < targetCount ? 'Load Next Questions' : 'Complete Quiz'}
                                     <CheckCircle2 className="w-4 h-4 ml-2 transition-transform group-hover:scale-110" />
                                 </>
                             )}
