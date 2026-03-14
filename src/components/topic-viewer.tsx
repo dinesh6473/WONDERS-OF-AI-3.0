@@ -10,7 +10,6 @@ import { FlashcardCarousel } from '@/components/flashcard-carousel'
 import { ChatInterface } from '@/components/chat-interface'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { QuizModal } from '@/components/quiz-modal'
 import { CodePlayground } from '@/components/code-playground'
 import { CodeBlock } from '@/components/code-block'
 import { cn } from '@/lib/utils'
@@ -30,7 +29,6 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
     const router = useRouter()
     const [isGenerating, startGeneration] = useTransition()
     const [isCompleting, startCompletion] = useTransition()
-    const [isQuizOpen, setIsQuizOpen] = useState(false)
     const [showFlashcards, setShowFlashcards] = useState(false)
 
     // Check if topic is completed based on status
@@ -45,7 +43,7 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
 
     // Body scroll lock
     useEffect(() => {
-        if (showFlashcards || isQuizOpen) {
+        if (showFlashcards) {
             document.body.style.overflow = 'hidden'
         } else {
             document.body.style.overflow = 'unset'
@@ -53,7 +51,7 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
         return () => {
             document.body.style.overflow = 'unset'
         }
-    }, [showFlashcards, isQuizOpen])
+    }, [showFlashcards])
 
     // Activity Logging
     useEffect(() => {
@@ -433,16 +431,18 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
 
                 <div className="flex items-center gap-3">
                     <Button
-                        onClick={() => setIsQuizOpen(true)}
+                        asChild
                         disabled={!hasApiKey}
                         title={!hasApiKey ? "API Key Required" : "Take Quiz"}
                         className={cn(
                             "bg-blue-600 hover:bg-blue-700 text-white border-none",
-                            !hasApiKey && "opacity-50 cursor-not-allowed"
+                            !hasApiKey && "pointer-events-none opacity-50 cursor-not-allowed"
                         )}
                     >
-                        <Brain className="w-4 h-4 mr-2" />
-                        Take Quiz
+                        <Link href={`/dashboard/quiz?subject_id=${topic.subject_id}&topic_id=${topic.id}&view=attempt`}>
+                            <Brain className="w-4 h-4 mr-2" />
+                            Take Quiz
+                        </Link>
                     </Button>
 
                     <Button
@@ -469,13 +469,6 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
                     </Button>
                 </div>
             </div>
-
-            <QuizModal
-                isOpen={isQuizOpen}
-                onOpenChange={setIsQuizOpen}
-                topicId={topic.id}
-                topicTitle={topic.title}
-            />
             {/* AI Tutor Chat */}
             <ChatInterface topicId={topic.id} title={topic.title} hasApiKey={hasApiKey} />
 

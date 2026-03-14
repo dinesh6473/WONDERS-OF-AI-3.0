@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 
 type QuizSearchParams = {
   subject_id?: string
+  topic_id?: string
   view?: string
 }
 
@@ -65,6 +66,7 @@ export default async function QuizSetupPage(props: {
 }) {
   const searchParams = await props.searchParams
   const subjectId = searchParams.subject_id
+  const topicId = searchParams.topic_id
   const isAttemptView = searchParams.view === "attempt"
 
   const supabase = await createClient()
@@ -223,6 +225,7 @@ export default async function QuizSetupPage(props: {
       history={history}
       initialSubject={subject}
       initialTopics={topics}
+      initialSelectedTopicIds={topicId ? [topicId] : []}
       isAttemptView={isAttemptView}
     />
   )

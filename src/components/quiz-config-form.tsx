@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Sparkles } from "lucide-react"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Check, ChevronDown, Loader2, Sparkles } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { generateQuiz } from "@/app/actions"
 
 interface Topic {
@@ -23,21 +24,49 @@ interface Subject {
 interface QuizConfigFormProps {
     initialSubject: Subject | null
     initialTopics: Topic[]
+    initialSelectedTopicIds?: string[]
 }
 
-export function QuizConfigForm({ initialSubject, initialTopics }: QuizConfigFormProps) {
+export function QuizConfigForm({
+    initialSubject,
+    initialTopics,
+    initialSelectedTopicIds = [],
+}: QuizConfigFormProps) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
+    const [isTopicsDropdownOpen, setIsTopicsDropdownOpen] = useState(false)
+    const topicsDropdownRef = useRef<HTMLDivElement | null>(null)
     
     // Form state
     const [subjectName, setSubjectName] = useState(initialSubject?.title || "")
     const [globalTopics, setGlobalTopics] = useState("")
-    const [selectedCourseTopics, setSelectedCourseTopics] = useState<string[]>([])
+    const [selectedCourseTopics, setSelectedCourseTopics] = useState<string[]>(
+        initialTopics
+            .filter((topic) => initialSelectedTopicIds.includes(topic.id))
+            .map((topic) => topic.title)
+    )
     const [difficulty, setDifficulty] = useState("3")
     const [questionCount, setQuestionCount] = useState("10")
     
     const isGlobal = !initialSubject
+
+    useEffect(() => {
+        if (!isTopicsDropdownOpen) return
+
+        function handleClickOutside(event: MouseEvent) {
+            if (topicsDropdownRef.current && !topicsDropdownRef.current.contains(event.target as Node)) {
+                setIsTopicsDropdownOpen(false)
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [isTopicsDropdownOpen])
+
+    const selectedTopicsLabel = selectedCourseTopics.length > 0
+        ? `${selectedCourseTopics.length} topic${selectedCourseTopics.length > 1 ? 's' : ''} selected`
+        : 'Select unlocked topics'
 
     function handleTopicToggle(topicTitle: string) {
         if (selectedCourseTopics.includes(topicTitle)) {
@@ -124,27 +153,75 @@ export function QuizConfigForm({ initialSubject, initialTopics }: QuizConfigForm
                                 You haven't unlocked any specific topics yet. We'll generate a general quiz for {initialSubject.title}.
                             </div>
                         ) : (
-                            <div className="flex flex-wrap gap-2 p-4 rounded-lg bg-black/20 border border-white/5 max-h-[200px] overflow-y-auto no-scrollbar">
-                                {initialTopics.map((topic) => {
-                                    const isSelected = selectedCourseTopics.includes(topic.title)
-                                    return (
-                                        <button
-                                            key={topic.id}
-                                            type="button"
-                                            onClick={() => handleTopicToggle(topic.title)}
-                                            className={`px-3 py-1.5 text-sm rounded-full transition-all border ${
-                                                isSelected 
-                                                ? "bg-blue-600/20 border-blue-500/50 text-blue-200 shadow-[0_0_10px_-2px_rgba(59,130,246,0.3)]" 
-                                                : "bg-white/5 border-white/10 text-zinc-400 hover:text-zinc-200 hover:bg-white/10"
-                                            }`}
-                                        >
-                                            {topic.title}
-                                        </button>
-                                    )
-                                })}
+                            <div ref={topicsDropdownRef} className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsTopicsDropdownOpen(prev => !prev)}
+                                    className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-left text-sm text-white transition-all hover:border-white/20 hover:bg-white/5"
+                                >
+                                    <span className={cn(
+                                        "truncate",
+                                        selectedCourseTopics.length === 0 && "text-zinc-500"
+                                    )}>
+                                        {selectedTopicsLabel}
+                                    </span>
+                                    <ChevronDown className={cn(
+                                        "h-4 w-4 text-zinc-400 transition-transform",
+                                        isTopicsDropdownOpen && "rotate-180"
+                                    )} />
+                                </button>
+
+                                {isTopicsDropdownOpen && (
+                                    <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/95 shadow-2xl backdrop-blur-xl">
+                                        <ScrollArea className="max-h-64">
+                                            <div className="p-2">
+                                                {initialTopics.map((topic) => {
+                                                    const isSelected = selectedCourseTopics.includes(topic.title)
+                                                    return (
+                                                        <button
+                                                            key={topic.id}
+                                                            type="button"
+                                                            onClick={() => handleTopicToggle(topic.title)}
+                                                            className={cn(
+                                                                "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-all",
+                                                                isSelected
+                                                                    ? "bg-blue-600/20 text-blue-100"
+                                                                    : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                                                            )}
+                                                        >
+                                                            <span className="pr-4 text-left">{topic.title}</span>
+                                                            <span className={cn(
+                                                                "flex h-5 w-5 items-center justify-center rounded-md border",
+                                                                isSelected
+                                                                    ? "border-blue-400 bg-blue-500 text-white"
+                                                                    : "border-white/10 bg-black/30 text-transparent"
+                                                            )}>
+                                                                <Check className="h-3.5 w-3.5" />
+                                                            </span>
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        </ScrollArea>
+                                    </div>
+                                )}
                             </div>
                         )}
-                        <p className="text-xs text-zinc-500 mt-1">Select specific areas to focus on. Leave blank for a general test.</p>
+                        {selectedCourseTopics.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-2">
+                                {selectedCourseTopics.map((topic) => (
+                                    <button
+                                        key={topic}
+                                        type="button"
+                                        onClick={() => handleTopicToggle(topic)}
+                                        className="rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs text-blue-200 transition-all hover:bg-blue-500/20"
+                                    >
+                                        {topic}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        <p className="text-xs text-zinc-500 mt-1">Choose one or more unlocked topics. Leave it empty for a general quiz on this subject.</p>
                     </div>
                 )}
 

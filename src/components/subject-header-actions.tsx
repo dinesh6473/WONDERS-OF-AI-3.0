@@ -86,7 +86,7 @@ export function SubjectHeaderActions({ subjectId, title, hasApiKey = false, isOw
             <LinkTopicModal subjectId={subjectId} />
 
             {/* Quiz Button */}
-            <Link href={`/dashboard/quiz?subject_id=${subjectId}`}>
+            <Link href={`/dashboard/quiz?subject_id=${subjectId}&view=attempt`}>
                 <Button size="sm" variant="outline" className="gap-2 border-white/10 hover:border-white/20 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10">
                     <FileQuestion className="h-4 w-4" />
                     Quiz

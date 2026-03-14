@@ -80,6 +80,7 @@ interface QuizDashboardViewProps {
   history: HistoryItem[]
   initialSubject: Subject
   initialTopics: Topic[]
+  initialSelectedTopicIds?: string[]
   isAttemptView: boolean
 }
 
@@ -127,6 +128,7 @@ export function QuizDashboardView({
   history,
   initialSubject,
   initialTopics,
+  initialSelectedTopicIds = [],
   isAttemptView,
 }: QuizDashboardViewProps) {
   if (isAttemptView) {
@@ -168,7 +170,11 @@ export function QuizDashboardView({
               </div>
             </div>
 
-            <QuizConfigForm initialSubject={initialSubject} initialTopics={initialTopics} />
+            <QuizConfigForm
+              initialSubject={initialSubject}
+              initialTopics={initialTopics}
+              initialSelectedTopicIds={initialSelectedTopicIds}
+            />
           </div>
         </div>
       </div>
