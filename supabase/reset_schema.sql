@@ -61,6 +61,9 @@ create table subjects (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+create index if not exists idx_subjects_user_created
+  on subjects (user_id, created_at desc);
+
 alter table subjects enable row level security;
 create policy "Users can view own subjects" on subjects for select using (auth.uid() = user_id);
 create policy "Users can insert own subjects" on subjects for insert with check (auth.uid() = user_id);
@@ -82,6 +85,12 @@ create table topics (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+create index if not exists idx_topics_subject_status
+  on topics (subject_id, status);
+
+create index if not exists idx_topics_subject_created
+  on topics (subject_id, created_at desc);
+
 alter table topics enable row level security;
 create policy "Users can view own topics" on topics for select using (
   exists (select 1 from subjects where subjects.id = topics.subject_id and subjects.user_id = auth.uid())
@@ -102,6 +111,9 @@ create table topic_dependencies (
   child_topic_id uuid references topics(id) on delete cascade not null,
   primary key (parent_topic_id, child_topic_id)
 );
+
+create index if not exists idx_topic_dependencies_child
+  on topic_dependencies (child_topic_id);
 
 alter table topic_dependencies enable row level security;
 create policy "Users can manage dependencies" on topic_dependencies for all using (
@@ -141,6 +153,9 @@ create table flashcards (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+create index if not exists idx_flashcards_topic_review
+  on flashcards (topic_id, next_review_at);
+
 alter table flashcards enable row level security;
 create policy "Users can manage flashcards" on flashcards for all using (
   exists (
@@ -162,6 +177,12 @@ create table quizzes (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+create index if not exists idx_quizzes_user_created
+  on quizzes (user_id, created_at desc);
+
+create index if not exists idx_quizzes_subject_created
+  on quizzes (subject_id, created_at desc);
+
 alter table quizzes enable row level security;
 create policy "Users can view own quizzes" on quizzes for select using (auth.uid() = user_id);
 create policy "Users can insert own quizzes" on quizzes for insert with check (auth.uid() = user_id);
@@ -178,6 +199,12 @@ create table quiz_results (
   user_answers jsonb not null default '{}'::jsonb,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+create index if not exists idx_quiz_results_user_created
+  on quiz_results (user_id, created_at desc);
+
+create index if not exists idx_quiz_results_quiz_created
+  on quiz_results (quiz_id, created_at desc);
 
 alter table quiz_results enable row level security;
 create policy "Users can view own quiz results" on quiz_results for select using (auth.uid() = user_id);

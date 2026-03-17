@@ -12,7 +12,7 @@ import { Loader2 } from 'lucide-react'
 // Actually, creating a client component that takes the server actions as props is cleaner, or just importing them.
 // Ensure 'signInWithGithub' and 'signInWithGoogle' are 'use server' in actions.ts (they are).
 
-export function LoginButtons() {
+export function LoginButtons({ nextPath = '/dashboard' }: { nextPath?: string }) {
     const [isLoading, setIsLoading] = useState(false)
 
     const handleGoogleLogin = async () => {
@@ -41,7 +41,7 @@ export function LoginButtons() {
                 // The browser will open, and AuthListener will handle the rest.
             } else {
                 // WEB FLOW - Use Server Action
-                await signInWithGoogle()
+                await signInWithGoogle(nextPath)
             }
         } catch (e: any) {
             console.error("Login failed", e)
@@ -67,7 +67,7 @@ export function LoginButtons() {
                 }
             } else {
                 // WEB FLOW
-                await signInWithGithub()
+                await signInWithGithub(nextPath)
             }
         } catch (e: any) {
             console.error("Github Login failed", e)

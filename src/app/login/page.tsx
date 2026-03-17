@@ -1,13 +1,13 @@
-import { login, signInWithGithub, signInWithGoogle } from './actions'
+import { login } from './actions'
 import { Button } from "@/components/ui/button"
 import { LoginButtons } from "./login-buttons"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Brain, Github } from "lucide-react"
+import { Brain } from "lucide-react"
 import Link from "next/link"
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; next?: string; message?: string }> }) {
     const params = await searchParams
     return (
         <div className="flex min-h-screen items-center justify-center bg-black/95 p-4">
@@ -34,6 +34,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
                 </CardHeader>
                 <CardContent>
                     <form className="space-y-4">
+                        <input type="hidden" name="next" value={params.next ?? "/dashboard"} />
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-zinc-300">Email</Label>
                             <Input
@@ -42,6 +43,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
                                 type="email"
                                 placeholder="name@example.com"
                                 required
+                                autoComplete="email"
                                 suppressHydrationWarning
                                 className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-blue-600"
                             />
@@ -53,10 +55,16 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
                                 name="password"
                                 type="password"
                                 required
+                                autoComplete="current-password"
                                 suppressHydrationWarning
                                 className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-blue-600"
                             />
                         </div>
+                        {params.message && (
+                            <div className="text-emerald-400 text-sm text-center">
+                                {params.message}
+                            </div>
+                        )}
                         {params.error && (
                             <div className="text-red-400 text-sm text-center">
                                 {params.error}
@@ -69,7 +77,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
 
                     <div className="relative flex justify-center text-xs uppercase my-4"><span className="bg-zinc-950 px-2 text-zinc-400">Or continue with</span></div>
 
-                    <LoginButtons />
+                    <LoginButtons nextPath={params.next ?? "/dashboard"} />
                     <div className="mt-4 text-center text-sm">
                         <span className="text-zinc-400">Don&apos;t have an account? </span>
                         <Link href="/signup" className="text-blue-500 hover:text-blue-400 hover:underline">

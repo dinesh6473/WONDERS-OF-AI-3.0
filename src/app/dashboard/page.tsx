@@ -1,26 +1,22 @@
 import { Brain } from 'lucide-react'
-import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { getSubjects, getProfile, getResumeTopic } from "@/app/actions";
 import { SubjectCard } from "@/components/subject-card";
 import { CreateSubjectModal } from "@/components/create-subject-modal";
 import { Button } from "@/components/ui/button";
-import Link from 'next/link'
-import { StatsCards } from "@/components/stats-cards";
 import { ActivityChart } from "@/components/activity-chart";
+import Link from 'next/link'
 
 export default async function DashboardPage() {
-    const supabase = await createClient();
+    const [profile, subjects, resumeTopic] = await Promise.all([
+        getProfile(),
+        getSubjects(),
+        getResumeTopic(),
+    ]);
 
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    if (!profile) {
         return redirect("/");
     }
-
-    const subjects = await getSubjects();
-    const profile = await getProfile();
-    const resumeTopic = await getResumeTopic();
 
     return (
         <div className="max-w-7xl mx-auto px-6 py-10 space-y-8">

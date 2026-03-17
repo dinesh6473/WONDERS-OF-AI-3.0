@@ -82,10 +82,13 @@ export default async function QuizSetupPage(props: {
   let topics: { id: string; title: string }[] = []
 
   if (subjectId) {
-    const { data } = await getSubject(subjectId)
+    const [{ data }, graphData] = await Promise.all([
+      getSubject(subjectId),
+      getSubjectTopics(subjectId),
+    ])
+
     if (data) {
       subject = data
-      const graphData = await getSubjectTopics(subjectId)
       topics = (graphData.nodes as TopicNode[])
         .filter(
           (n) =>
@@ -100,21 +103,22 @@ export default async function QuizSetupPage(props: {
   let quizzes: QuizRow[] = []
   let results: QuizResultRow[] = []
 
-  const quizzesResponse = await supabase
-    .from("quizzes")
-    .select("id, subject_id, subject_name, difficulty, topics, questions, created_at")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
+  const [quizzesResponse, resultsResponse] = await Promise.all([
+    supabase
+      .from("quizzes")
+      .select("id, subject_id, subject_name, difficulty, topics, questions, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("quiz_results")
+      .select("id, quiz_id, score, total_questions, user_answers, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+  ])
 
   if (!quizzesResponse.error && quizzesResponse.data) {
     quizzes = quizzesResponse.data as QuizRow[]
   }
-
-  const resultsResponse = await supabase
-    .from("quiz_results")
-    .select("id, quiz_id, score, total_questions, user_answers, created_at")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
 
   if (!resultsResponse.error && resultsResponse.data) {
     results = resultsResponse.data as QuizResultRow[]

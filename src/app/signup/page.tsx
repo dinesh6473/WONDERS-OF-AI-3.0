@@ -1,4 +1,4 @@
-import { login, signup, signInWithGithub, signInWithGoogle } from '../login/actions'
+import { signup, signInWithGithub, signInWithGoogle } from '../login/actions'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -34,6 +34,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
                                 type="email"
                                 placeholder="name@example.com"
                                 required
+                                autoComplete="email"
                                 suppressHydrationWarning
                                 className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-blue-600"
                             />
@@ -45,10 +46,15 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
                                 name="password"
                                 type="password"
                                 required
+                                autoComplete="new-password"
+                                minLength={8}
                                 suppressHydrationWarning
                                 className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-blue-600"
                             />
                         </div>
+                        <p className="text-xs text-zinc-500">
+                            Use at least 8 characters with both letters and numbers.
+                        </p>
                         {params.error && (
                             <div className="text-red-400 text-sm text-center">
                                 {params.error}

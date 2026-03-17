@@ -42,13 +42,15 @@ export async function updateSession(request: NextRequest) {
         return supabaseResponse
     }
 
-    // For protected routes: check session from cookies (fast, no network call)
+    // For protected routes: validate the authenticated user instead of trusting the cookie payload alone.
     try {
-        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { user } } = await supabase.auth.getUser()
 
-        if (!session) {
+        if (!user) {
             const url = request.nextUrl.clone()
             url.pathname = '/login'
+            const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`
+            url.searchParams.set('next', nextPath)
             return NextResponse.redirect(url)
         }
     } catch (error) {
@@ -56,9 +58,10 @@ export async function updateSession(request: NextRequest) {
         console.error('[Middleware] Session check error:', error)
         const url = request.nextUrl.clone()
         url.pathname = '/login'
+        const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`
+        url.searchParams.set('next', nextPath)
         return NextResponse.redirect(url)
     }
 
     return supabaseResponse
 }
-

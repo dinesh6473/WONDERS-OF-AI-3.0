@@ -4,8 +4,9 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { generateMoreQuizQuestions, submitQuiz } from '@/app/actions'
-import { Loader2, ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { generateMoreQuizQuestions, submitQuiz, evaluateTheoreticalAnswer } from '@/app/actions'
+import { Loader2, ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, BrainCircuit } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface QuizTakeFlowProps {
@@ -16,7 +17,22 @@ export function QuizTakeFlow({ quiz }: QuizTakeFlowProps) {
     const router = useRouter()
     const [isSubmitting, startTransition] = useTransition()
     const [currentIndex, setCurrentIndex] = useState(0)
-    const [checkedQuestions, setCheckedQuestions] = useState<Record<number, boolean>>({})
+    const [checkedQuestions, setCheckedQuestions] = useState<Record<number, { 
+        rating: number, 
+        overall_score: number,
+        accuracy_score: number,
+        completeness_score: number,
+        clarity_score: number,
+        explanation: string, 
+        ideal_answer: string,
+        detailed_analysis: {
+            correct_aspects: string[],
+            missing_concepts: string[],
+            misconceptions: string[]
+        },
+        improvement_suggestion: string 
+    }>>({})
+    const [isChecking, setIsChecking] = useState(false)
     const [questions, setQuestions] = useState(quiz.questions || [])
     const [isLoadingMore, setIsLoadingMore] = useState(false)
     const visitedQuestionIndexesRef = useRef<Set<number>>(new Set([0]))
@@ -36,7 +52,8 @@ export function QuizTakeFlow({ quiz }: QuizTakeFlowProps) {
     }
 
     const currentQuestion = questions[currentIndex]
-    const isCurrentAnswerChecked = !!checkedQuestions[currentIndex]
+    const currentEvaluation = checkedQuestions[currentIndex]
+    const isCurrentAnswerChecked = !!currentEvaluation
 
     useEffect(() => {
         visitedQuestionIndexesRef.current.add(currentIndex)
@@ -76,8 +93,27 @@ export function QuizTakeFlow({ quiz }: QuizTakeFlowProps) {
         }
     }
 
-    function handleCheckCurrentAnswer() {
-        setCheckedQuestions(prev => ({ ...prev, [currentIndex]: true }))
+    async function handleCheckCurrentAnswer() {
+        if (!currentAnswer || currentAnswer.trim() === '') return
+        
+        setIsChecking(true)
+        try {
+            const result = await evaluateTheoreticalAnswer(
+                currentQuestion.question,
+                currentAnswer,
+                currentQuestion.reference_answer || "No reference answer provided"
+            )
+            
+            setCheckedQuestions(prev => ({
+                ...prev,
+                [currentIndex]: result
+            }))
+        } catch (e: any) {
+            console.error("Evaluation failed", e)
+            alert("Evaluation failed: " + e.message)
+        } finally {
+            setIsChecking(false)
+        }
     }
 
     async function ensureMoreQuestions() {
@@ -86,14 +122,16 @@ export function QuizTakeFlow({ quiz }: QuizTakeFlowProps) {
         setIsLoadingMore(true)
         try {
             const desiredCount = Math.min(20, targetCount - questions.length)
-            const moreQuestions = await generateMoreQuizQuestions({
+            const result = await generateMoreQuizQuestions({
                 quizId: quiz.id,
                 currentQuestions: questions,
                 desiredCount,
             })
 
-            if (moreQuestions.length > 0) {
-                setQuestions((prev: any[]) => [...prev, ...moreQuestions])
+            if (result.error) {
+                console.error('Failed to load more questions:', result.error)
+            } else if (result.data && result.data.length > 0) {
+                setQuestions((prev: any[]) => [...prev, ...result.data])
             }
         } catch (error) {
             console.error('Failed to load more questions:', error)
@@ -116,7 +154,8 @@ export function QuizTakeFlow({ quiz }: QuizTakeFlowProps) {
                     quiz.id,
                     answers,
                     questions,
-                    Array.from(visitedQuestionIndexesRef.current).sort((a, b) => a - b)
+                    Array.from(visitedQuestionIndexesRef.current).sort((a, b) => a - b),
+                    checkedQuestions
                 )
                 router.push(`/dashboard/quiz/${quiz.id}/results?result_id=${resultId}`)
              } catch (e: any) {
@@ -131,17 +170,8 @@ export function QuizTakeFlow({ quiz }: QuizTakeFlowProps) {
     
     // Logic to check correctness for instant feedback
     let isCorrect = false
-    if (isCurrentAnswerChecked) {
-        const normalizedUser = String(currentAnswer || "").trim().toLowerCase()
-        const normalizedCorrect = String(currentQuestion.correct_answer || "").trim().toLowerCase()
-        
-        if (currentQuestion.type === 'multi_mcq') {
-            const userArr = Array.isArray(currentAnswer) ? currentAnswer : []
-            const correctArr = Array.isArray(currentQuestion.correct_answer) ? currentQuestion.correct_answer : []
-            isCorrect = userArr.length === correctArr.length && userArr.every(val => correctArr.includes(val)) && userArr.length > 0
-        } else {
-            isCorrect = normalizedUser === normalizedCorrect && normalizedUser !== ""
-        }
+    if (isCurrentAnswerChecked && currentEvaluation) {
+        isCorrect = currentEvaluation.rating >= 2.5
     }
 
     return (
@@ -175,11 +205,31 @@ export function QuizTakeFlow({ quiz }: QuizTakeFlowProps) {
                         </Button>
                     </div>
                 </div>
-                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div 
-                        className="h-full bg-blue-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]"
-                        style={{ width: `${(visitedQuestionIndexesRef.current.size / Math.max(targetCount, 1)) * 100}%` }}
-                    />
+                
+                {/* Navigation Grid */}
+                <div className="flex flex-wrap gap-2">
+                    {questions.map((q: any, i: number) => {
+                        const isVisited = visitedQuestionIndexesRef.current.has(i)
+                        const evalResult = checkedQuestions[i]
+                        return (
+                            <button
+                                key={i}
+                                onClick={() => setCurrentIndex(i)}
+                                className={cn(
+                                    "w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition-all border",
+                                    currentIndex === i 
+                                        ? "bg-blue-600 text-white border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] scale-110 z-10" 
+                                        : evalResult 
+                                            ? evalResult.rating >= 2.5 ? "bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30" : "bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30"
+                                            : isVisited 
+                                                ? "bg-white/10 text-white border-white/20 hover:bg-white/20" 
+                                                : "bg-black/40 text-zinc-500 border-white/5 hover:border-white/10 hover:text-zinc-300"
+                                )}
+                            >
+                                {i + 1}
+                            </button>
+                        )
+                    })}
                 </div>
             </div>
 
@@ -201,131 +251,162 @@ export function QuizTakeFlow({ quiz }: QuizTakeFlowProps) {
                 </h2>
 
                 <div className="flex-1 flex flex-col justify-center">
-                    {currentQuestion.type === 'single_mcq' && (
-                        <div className="space-y-3">
-                            {currentQuestion.options?.map((option: string, idx: number) => {
-                                const isSelected = currentAnswer === option
-                                const isKeyCorrect = option === currentQuestion.correct_answer
-                                
-                                return (
-                                    <button
-                                        key={idx}
-                                        onClick={() => handleSingleSelect(option)}
-                                        disabled={isCurrentAnswerChecked}
-                                        className={cn(
-                                            "w-full text-left p-4 rounded-2xl border transition-all duration-200 group relative",
-                                            isSelected 
-                                                ? isCurrentAnswerChecked
-                                                    ? isCorrect 
-                                                        ? "bg-green-600/20 border-green-500 text-green-100 ring-1 ring-green-500"
-                                                        : "bg-red-600/20 border-red-500 text-red-100 ring-1 ring-red-500"
-                                                    : "bg-blue-600/20 border-blue-500 text-blue-100 ring-1 ring-blue-500" 
-                                                : isCurrentAnswerChecked && isKeyCorrect
-                                                    ? "bg-green-600/10 border-green-500/50 text-green-200/70"
-                                                    : "bg-black/40 border-white/5 hover:border-white/20 hover:bg-white/5 text-zinc-400",
-                                            isCurrentAnswerChecked && "cursor-default"
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className={cn(
-                                                "w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
-                                                isSelected 
-                                                    ? isCurrentAnswerChecked
-                                                        ? isCorrect ? "border-green-500 bg-green-500" : "border-red-500 bg-red-500"
-                                                        : "border-blue-500 bg-blue-500" 
-                                                    : "border-zinc-700 group-hover:border-zinc-500"
-                                            )}>
-                                                {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full shadow-lg" />}
-                                            </div>
-                                            <span className="text-base">{option}</span>
-                                        </div>
-                                    </button>
-                                )
-                            })}
-                        </div>
-                    )}
-
-                    {currentQuestion.type === 'multi_mcq' && (
-                        <div className="space-y-3">
-                            <p className="text-[10px] uppercase tracking-widest text-blue-400 mb-2 font-bold opacity-70">Multiple Selection</p>
-                            {currentQuestion.options?.map((option: string, idx: number) => {
-                                const selectedArr = Array.isArray(currentAnswer) ? currentAnswer : []
-                                const isSelected = selectedArr.includes(option)
-                                const isKeyCorrect = Array.isArray(currentQuestion.correct_answer) && currentQuestion.correct_answer.includes(option)
-                                
-                                return (
-                                    <button
-                                        key={idx}
-                                        onClick={() => handleMultiSelect(option)}
-                                        disabled={isCurrentAnswerChecked}
-                                        className={cn(
-                                            "w-full text-left p-4 rounded-2xl border transition-all duration-200 group",
-                                            isSelected 
-                                                ? isCurrentAnswerChecked
-                                                    ? isKeyCorrect 
-                                                        ? "bg-green-600/20 border-green-500 text-green-100 ring-1 ring-green-500"
-                                                        : "bg-red-600/20 border-red-500 text-red-100 ring-1 ring-red-500"
-                                                    : "bg-indigo-600/20 border-indigo-500 text-indigo-100 ring-1 ring-indigo-500"
-                                                : isCurrentAnswerChecked && isKeyCorrect
-                                                    ? "bg-green-600/10 border-green-500/50 text-green-200/70"
-                                                    : "bg-black/40 border-white/5 hover:border-white/20 hover:bg-white/5 text-zinc-400",
-                                            isCurrentAnswerChecked && "cursor-default"
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className={cn(
-                                                "w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition-colors",
-                                                isSelected 
-                                                    ? isCurrentAnswerChecked
-                                                        ? isKeyCorrect ? "border-green-500 bg-green-500" : "border-red-500 bg-red-500"
-                                                        : "border-indigo-500 bg-indigo-500" 
-                                                    : "border-zinc-700 group-hover:border-zinc-500"
-                                            )}>
-                                                {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
-                                            </div>
-                                            <span className="text-base">{option}</span>
-                                        </div>
-                                    </button>
-                                )
-                            })}
-                        </div>
-                    )}
-
-                    {currentQuestion.type === 'fill_in_blank' && (
-                        <div className="space-y-4">
-                            <p className="text-[10px] uppercase tracking-widest text-amber-500 mb-2 font-bold opacity-70">Input Required</p>
-                            <Input 
-                                autoFocus
-                                disabled={isCurrentAnswerChecked}
-                                value={currentAnswer || ''}
-                                onChange={(e) => handleTextInput(e.target.value)}
-                                placeholder="Type your answer here..."
-                                className={cn(
-                                    "h-16 bg-black/60 border-white/10 text-xl rounded-2xl px-8 shadow-inner transition-colors",
-                                    isCurrentAnswerChecked 
-                                        ? isCorrect ? "border-green-500/50 text-green-400" : "border-red-500/50 text-red-400"
-                                        : "text-white focus-visible:ring-amber-500"
-                                )}
-                            />
-                        </div>
-                    )}
+                    <div className="space-y-4 h-full flex flex-col">
+                        <Textarea 
+                            autoFocus
+                            disabled={isCurrentAnswerChecked || isChecking}
+                            value={currentAnswer || ''}
+                            onChange={(e) => handleTextInput(e.target.value)}
+                            placeholder="Type your detailed answer here..."
+                            className={cn(
+                                "flex-1 min-h-[200px] bg-black/60 border-white/10 text-lg rounded-2xl p-6 shadow-inner transition-colors resize-none",
+                                isCurrentAnswerChecked 
+                                    ? isCorrect ? "border-green-500/50 text-green-400 focus-visible:ring-0" : "border-amber-500/50 text-amber-400 focus-visible:ring-0"
+                                    : "text-white focus-visible:ring-blue-500",
+                                isChecking && "opacity-50"
+                            )}
+                        />
+                    </div>
                 </div>
 
                 {/* Instant Feedback Explanation */}
-                {isCurrentAnswerChecked && (
+                {isCurrentAnswerChecked && currentEvaluation && (
                     <div className="mt-8 pt-6 border-t border-white/5 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex items-center gap-2 mb-3">
-                            <BrainIcon className="w-5 h-5 text-blue-400" />
-                            <h4 className="text-sm font-bold text-blue-400 uppercase tracking-wider">AI Explanation</h4>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <BrainIcon className="w-5 h-5 text-blue-400" />
+                                <h4 className="text-sm font-bold text-blue-400 uppercase tracking-wider">AI Evaluation</h4>
+                            </div>
+                            <div className={cn(
+                                "px-4 py-1.5 rounded-full font-bold text-lg border",
+                                currentEvaluation.overall_score >= 4 ? "bg-green-500/20 text-green-400 border-green-500/30" : 
+                                currentEvaluation.overall_score >= 2.5 ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : 
+                                "bg-red-500/20 text-red-400 border-red-500/30"
+                            )}>
+                                {Number(currentEvaluation.overall_score).toFixed(2)} / 5.00
+                            </div>
                         </div>
-                        <div className="bg-blue-600/5 border border-blue-500/20 rounded-2xl p-5 text-sm text-blue-100/80 leading-relaxed shadow-inner">
-                            {!isCorrect && <p className="text-red-400/80 mb-2 font-medium italic">Correct Answer: {
-                                Array.isArray(currentQuestion.correct_answer) 
-                                ? currentQuestion.correct_answer.join(", ") 
-                                : currentQuestion.correct_answer
-                            }</p>}
-                            {currentQuestion.explanation}
+
+                        {/* Multi-Axis Rubric */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                            {[
+                                { label: "Accuracy", score: currentEvaluation.accuracy_score, color: "text-blue-400", bg: "bg-blue-500" },
+                                { label: "Completeness", score: currentEvaluation.completeness_score, color: "text-purple-400", bg: "bg-purple-500" },
+                                { label: "Clarity", score: currentEvaluation.clarity_score, color: "text-emerald-400", bg: "bg-emerald-500" }
+                            ].map((axis, idx) => (
+                                <div key={idx} className="bg-black/20 border border-white/5 rounded-xl p-3 flex flex-col justify-center">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className={`text-xs font-bold uppercase tracking-wider ${axis.color}`}>{axis.label}</span>
+                                        <span className={`text-sm font-bold ${axis.color}`}>{Number(axis.score).toFixed(1)}/5</span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                        <div 
+                                            className={`h-full ${axis.bg} transition-all duration-1000 ease-out`}
+                                            style={{ width: `${(axis.score / 5) * 100}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
                         </div>
+
+                        {/* Baseline Expectation */}
+                        {currentEvaluation.ideal_answer && (
+                            <div className="bg-indigo-900/20 border border-indigo-500/30 rounded-xl p-5 mb-6 shadow-inner">
+                                <h5 className="text-sm font-bold text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                    <BrainCircuit className="w-4 h-4" /> AI Baseline Expectation
+                                </h5>
+                                <p className="text-indigo-100/90 text-sm leading-relaxed">
+                                    {currentEvaluation.ideal_answer}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Diagnostic Breakdown */}
+                        {currentEvaluation.detailed_analysis && (
+                            <div className="space-y-4 mb-6">
+                                {(() => {
+                                    const correctAspects = Array.isArray(currentEvaluation.detailed_analysis.correct_aspects) 
+                                        ? currentEvaluation.detailed_analysis.correct_aspects 
+                                        : typeof currentEvaluation.detailed_analysis.correct_aspects === 'string' 
+                                            ? [currentEvaluation.detailed_analysis.correct_aspects] 
+                                            : [];
+                                    const missingConcepts = Array.isArray(currentEvaluation.detailed_analysis.missing_concepts)
+                                        ? currentEvaluation.detailed_analysis.missing_concepts
+                                        : typeof currentEvaluation.detailed_analysis.missing_concepts === 'string'
+                                            ? [currentEvaluation.detailed_analysis.missing_concepts]
+                                            : [];
+                                    const misconceptions = Array.isArray(currentEvaluation.detailed_analysis.misconceptions)
+                                        ? currentEvaluation.detailed_analysis.misconceptions
+                                        : typeof currentEvaluation.detailed_analysis.misconceptions === 'string'
+                                            ? [currentEvaluation.detailed_analysis.misconceptions]
+                                            : [];
+
+                                    return (
+                                        <>
+                                            {correctAspects.length > 0 && (
+                                                <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-4">
+                                                    <h5 className="text-sm font-bold text-green-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                                        <CheckCircle2 className="w-4 h-4" /> What You Got Right
+                                                    </h5>
+                                                    <ul className="space-y-2">
+                                                        {correctAspects.map((item: string, idx: number) => (
+                                                            <li key={idx} className="text-sm text-green-200/90 flex gap-2 items-start">
+                                                                <span className="text-green-500/50 mt-1">•</span> {item}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                            
+                                            {missingConcepts.length > 0 && (
+                                                <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
+                                                    <h5 className="text-sm font-bold text-amber-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                                        <AlertTriangle className="w-4 h-4" /> Missing Concepts
+                                                    </h5>
+                                                    <ul className="space-y-2">
+                                                        {missingConcepts.map((item: string, idx: number) => (
+                                                            <li key={idx} className="text-sm text-amber-200/90 flex gap-2 items-start">
+                                                                <span className="text-amber-500/50 mt-1">•</span> {item}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+
+                                            {misconceptions.length > 0 && (
+                                                <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4">
+                                                    <h5 className="text-sm font-bold text-red-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                                        <XCircle className="w-4 h-4" /> Misconceptions & Errors
+                                                    </h5>
+                                                    <ul className="space-y-2">
+                                                        {misconceptions.map((item: string, idx: number) => (
+                                                            <li key={idx} className="text-sm text-red-200/90 flex gap-2 items-start">
+                                                                <span className="text-red-500/50 mt-1">•</span> {item}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                        )}
+
+                        <div className="bg-blue-600/5 border border-blue-500/20 rounded-2xl p-5 text-sm text-blue-100/90 leading-relaxed shadow-inner mb-4">
+                            <span className="font-bold text-blue-400 uppercase tracking-wider text-xs block mb-2">Detailed Feedback</span>
+                            {currentEvaluation.explanation}
+                        </div>
+                        
+                        {currentEvaluation.improvement_suggestion && (
+                            <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 flex gap-3 items-start">
+                                <div className="mt-0.5 text-amber-500">💡</div>
+                                <div>
+                                    <h5 className="text-xs font-bold text-amber-500 uppercase tracking-wider mb-1">How to Improve</h5>
+                                    <p className="text-sm text-amber-200/90 font-medium">"{currentEvaluation.improvement_suggestion}"</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -343,15 +424,14 @@ export function QuizTakeFlow({ quiz }: QuizTakeFlowProps) {
                 </Button>
 
                 <div className="flex gap-4">
-                    {/* Only show Submit if not yet checked */}
                     {!isCurrentAnswerChecked && (
                         <Button 
                             onClick={handleCheckCurrentAnswer}
-                            disabled={!currentAnswer || (Array.isArray(currentAnswer) && currentAnswer.length === 0)}
-                            className="h-12 bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-900/20 group px-10 rounded-xl font-bold transition-all hover:scale-105 active:scale-95"
+                            disabled={!currentAnswer || currentAnswer.trim() === '' || isChecking}
+                            className="h-12 bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-900/20 group px-10 rounded-xl font-bold transition-all hover:scale-105 active:scale-95 disabled:scale-100"
                         >
-                            Check Answer
-                            <CheckCircle2 className="w-4 h-4 ml-2 transition-transform group-hover:scale-110" />
+                            {isChecking ? <Loader2 className="w-5 h-5 animate-spin" /> : "Evaluate Answer"}
+                            {!isChecking && <CheckCircle2 className="w-4 h-4 ml-2 transition-transform group-hover:scale-110" />}
                         </Button>
                     )}
 

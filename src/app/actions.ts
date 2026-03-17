@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { cache } from 'react'
 
 // Polyfill for DOMMatrix required by pdf-parse in Node.js/Next.js edge environments
 if (typeof global !== 'undefined' && !(global as any).DOMMatrix) {
@@ -21,27 +22,9 @@ export async function logout() {
 }
 
 export async function getProfile() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) return null
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name, gemini_api_key, occupation, education_level, learning_style, learning_schedule')
-        .eq('id', user.id)
-        .single()
-
-    // Attempt to seed profile if missing (resilience)
-    if (!profile) return { full_name: user.user_metadata?.full_name || user.email, hasKey: false }
-
-    return {
-        full_name: profile.full_name || user.user_metadata?.full_name || user.email,
-        hasKey: !!profile.gemini_api_key,
-        occupation: profile.occupation,
-        education_level: profile.education_level,
-        learning_style: profile.learning_style,
-        learning_schedule: profile.learning_schedule
-    }
+    return getProfileByUserId(user.id, user.user_metadata?.full_name, user.email)
 }
 
 export async function updateProfile(data: {
@@ -110,12 +93,104 @@ async function getApiKeyForUserId(userId: string) {
     return data?.gemini_api_key || null
 }
 
+const getCurrentUser = cache(async () => {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    return user
+})
+
+const getProfileByUserId = cache(async (userId: string, fallbackName?: string | null, fallbackEmail?: string | null) => {
+    const supabase = await createClient()
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, gemini_api_key, occupation, education_level, learning_style, learning_schedule')
+        .eq('id', userId)
+        .single()
+
+    if (!profile) {
+        return {
+            full_name: fallbackName || fallbackEmail,
+            hasKey: false,
+        }
+    }
+
+    return {
+        full_name: profile.full_name || fallbackName || fallbackEmail,
+        hasKey: !!profile.gemini_api_key,
+        occupation: profile.occupation,
+        education_level: profile.education_level,
+        learning_style: profile.learning_style,
+        learning_schedule: profile.learning_schedule
+    }
+})
+
+const getSubjectsByUserId = cache(async (userId: string) => {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+        .from('subjects')
+        .select(`
+            *,
+            topics (status)
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+
+    if (error) {
+        console.error('Error fetching subjects:', error)
+        return []
+    }
+
+    return data.map((subject: any) => {
+        const total = subject.topics.length
+        const completed = subject.topics.filter((t: any) => t.status === 'COMPLETED').length
+        const progress = total > 0 ? Math.round((completed / total) * 100) : 0
+        return { ...subject, progress }
+    })
+})
+
+const getStreakByUserId = cache(async (userId: string) => {
+    const supabase = await createClient()
+    const { data } = await supabase
+        .from('profiles')
+        .select('streak_count, last_active_date')
+        .eq('id', userId)
+        .single()
+
+    if (!data) return { count: 0, active: false }
+
+    const today = new Date().toISOString().split('T')[0]
+    const isActiveToday = data.last_active_date === today
+
+    return {
+        count: data.streak_count || 0,
+        active: isActiveToday
+    }
+})
+
+const getResumeTopicByUserId = cache(async (userId: string) => {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+        .from('topics')
+        .select(`
+            *,
+            subjects (
+                title
+            )
+        `)
+        .eq('user_id', userId)
+        .in('status', ['IN_PROGRESS', 'GENERATED', 'COMPLETED'])
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .single()
+
+    if (error || !data) return null
+    return data
+})
+
 type GeneratedQuizQuestion = {
-    type: 'single_mcq' | 'multi_mcq' | 'fill_in_blank'
+    type: 'theoretical'
     question: string
-    options: string[]
-    correct_answer: string | string[]
-    explanation: string
+    reference_answer: string
     difficulty_label: 'Easy' | 'Medium' | 'Hard'
 }
 
@@ -176,7 +251,7 @@ async function generateUniqueQuizQuestions(params: {
         blockedPrevious: string[],
         strict: boolean
     ) => `
-Generate exactly ${requestCount} UNIQUE quiz questions as raw JSON.
+Generate exactly ${requestCount} UNIQUE theoretical/open-ended quiz questions as raw JSON.
 
 Subject: ${params.subjectName}
 Topics: ${params.topics || "General coverage"}
@@ -187,20 +262,17 @@ ${strict ? `Never repeat or closely paraphrase questions from these blocked sets
 Existing bank: ${JSON.stringify(blockedPrevious)}
 Current batch: ${JSON.stringify(blockedCurrent)}` : `Avoid obvious duplicates and keep every question meaningfully different from the others in this response.`}
 
-Use a balanced mix of:
-- single_mcq: exactly 4 options, one correct answer
-- multi_mcq: 4 or 5 options, multiple correct answers
-- fill_in_blank: use "_____", options must be []
+The questions must be open-ended, conceptual, or essay-type questions that require the user to type out an explanation or solution. Do not use multiple choice.
 
 Return only:
-{"questions":[{"type":"single_mcq|multi_mcq|fill_in_blank","question":"...","options":["..."],"correct_answer":"..." ,"explanation":"Brief but clear explanation.","difficulty_label":"Easy|Medium|Hard"}]}
+{"questions":[{"type":"theoretical","question":"...","reference_answer":"Provide a detailed ideal answer or grading rubric.","difficulty_label":"Easy|Medium|Hard"}]}
 
 Rules:
 - no markdown
 - no extra text
 - factually correct
 - match requested difficulty
-- keep explanations concise
+- keep reference answers comprehensive to aid in grading later
 - every question must be meaningfully different
     `
 
@@ -252,7 +324,7 @@ Rules:
 
     if (finalQuestions.length === 0) {
         const fallbackPrompt = `
-Generate exactly ${params.count} quiz questions as raw JSON.
+Generate exactly ${params.count} theoretical/open-ended quiz questions as raw JSON.
 
 Subject: ${params.subjectName}
 Topics: ${params.topics || "General coverage"}
@@ -260,14 +332,14 @@ Difficulty: ${params.difficulty}/5
 Seen difficulty labels so far: ${JSON.stringify(params.seenDifficultyLabels || [])}
 
 Return only:
-{"questions":[{"type":"single_mcq|multi_mcq|fill_in_blank","question":"...","options":["..."],"correct_answer":"..." ,"explanation":"Brief but clear explanation.","difficulty_label":"Easy|Medium|Hard"}]}
+{"questions":[{"type":"theoretical","question":"...","reference_answer":"Provide a detailed ideal answer or grading rubric.","difficulty_label":"Easy|Medium|Hard"}]}
 
 Rules:
 - no markdown
 - no extra text
 - factually correct
 - every question must be clearly distinct from the others
-- keep explanations concise
+- keep reference answers comprehensive
         `
 
         const fallbackResult = await params.model.generateContent(fallbackPrompt)
@@ -369,32 +441,9 @@ async function extractTextFromFile(file: File): Promise<string> {
 // === SUBJECTS ===
 
 export async function getSubjects() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
+    const user = await getCurrentUser()
     if (!user) return []
-
-    const { data, error } = await supabase
-        .from('subjects')
-        .select(`
-            *,
-            topics (status)
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-
-    if (error) {
-        console.error('Error fetching subjects:', error)
-        return []
-    }
-
-    // Calculate progress
-    return data.map((subject: any) => {
-        const total = subject.topics.length
-        const completed = subject.topics.filter((t: any) => t.status === 'COMPLETED').length
-        const progress = total > 0 ? Math.round((completed / total) * 100) : 0
-        return { ...subject, progress }
-    })
+    return getSubjectsByUserId(user.id)
 }
 
 export async function createSubject(formData: FormData) {
@@ -1158,25 +1207,9 @@ export async function simplifyContent(text: string) {
 }
 
 export async function getStreak() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) return { count: 0, active: false }
-
-    const { data } = await supabase
-        .from('profiles')
-        .select('streak_count, last_active_date')
-        .eq('id', user.id)
-        .single()
-
-    if (!data) return { count: 0, active: false }
-
-    const today = new Date().toISOString().split('T')[0]
-    const isActiveToday = data.last_active_date === today
-
-    return {
-        count: data.streak_count || 0,
-        active: isActiveToday
-    }
+    return getStreakByUserId(user.id)
 }
 
 
@@ -1339,27 +1372,9 @@ export async function linkTopics(parentTopicId: string, childTopicId: string) {
 }
 
 export async function getResumeTopic() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) return null
-
-    // Find the most recently updated topic 
-    const { data, error } = await supabase
-        .from('topics')
-        .select(`
-            *,
-            subjects (
-                title
-            )
-        `)
-        .eq('user_id', user.id)
-        .in('status', ['IN_PROGRESS', 'GENERATED', 'COMPLETED'])
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .single()
-
-    if (error || !data) return null
-    return data
+    return getResumeTopicByUserId(user.id)
 }
 // === COMMUNITY FEATURES ===
 
@@ -1484,13 +1499,13 @@ export async function generateQuiz(params: {
     const response = await supabase.auth.getUser()
 
     const user = response.data?.user
-    if (!user) throw new Error('Not authenticated')
-    if (!Number.isFinite(params.count) || params.count < 1) {
-        throw new Error('Question count must be a positive number.')
+    if (!user) return { error: 'Not authenticated' }
+    if (!Number.isInteger(params.count) || params.count < 1 || params.count > 20) {
+        return { error: 'Question count must be between 1 and 20.' }
     }
 
     const apiKey = await getApiKeyForUserId(user.id)
-    if (!apiKey) throw new Error('API Key missing. Please set it in Settings.')
+    if (!apiKey) return { error: 'API Key missing. Please set it in Settings.' }
 
     // 1. Fetch previous questions to build an EXCLUDE_LIST
     // We only want to exclude questions from the same subject/topics to avoid getting too general.
@@ -1544,7 +1559,7 @@ export async function generateQuiz(params: {
         })
 
         if (initialQuestions.length !== initialBatchCount) {
-            throw new Error(`Could only generate ${initialQuestions.length} unique questions out of ${initialBatchCount}. Try again or reduce the count.`)
+            return { error: `Could only generate ${initialQuestions.length} unique questions out of ${initialBatchCount}. Try again or reduce the count.` }
         }
 
         // 3. Save to DB
@@ -1568,14 +1583,14 @@ export async function generateQuiz(params: {
 
         if (insertError) {
             console.error("DB Insert Error:", insertError)
-            throw new Error(`Failed to save quiz: ${insertError.message}`)
+            return { error: `Failed to save quiz: ${insertError.message}` }
         }
 
-        return newQuizId
+        return { quizId: newQuizId }
 
     } catch (e: any) {
         console.error("Quiz generation failed:", e)
-        throw new Error(e.message || "Failed to communicate with AI.")
+        return { error: e.message || "Failed to communicate with AI." }
     }
 }
 
@@ -1586,7 +1601,10 @@ export async function generateMoreQuizQuestions(params: {
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
+    if (!user) return { error: 'Not authenticated' }
+    if (!Number.isInteger(params.desiredCount) || params.desiredCount < 1 || params.desiredCount > 20) {
+        return { error: 'Requested question batch must be between 1 and 20.' }
+    }
 
     const { data: quiz, error } = await supabase
         .from('quizzes')
@@ -1596,11 +1614,11 @@ export async function generateMoreQuizQuestions(params: {
         .single()
 
     if (error || !quiz) {
-        throw new Error('Quiz not found.')
+        return { error: 'Quiz not found.' }
     }
 
     const apiKey = await getApiKeyForUserId(user.id)
-    if (!apiKey) throw new Error('API Key missing. Please set it in Settings.')
+    if (!apiKey) return { error: 'API Key missing. Please set it in Settings.' }
 
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
@@ -1623,7 +1641,7 @@ export async function generateMoreQuizQuestions(params: {
     })
 
     if (newQuestions.length === 0) {
-        throw new Error('Could not generate more unique questions right now. Please continue or try again.')
+        return { error: 'Could not generate more unique questions right now. Please continue or try again.' }
     }
 
     const updatedQuestions = [...params.currentQuestions, ...newQuestions]
@@ -1634,17 +1652,18 @@ export async function generateMoreQuizQuestions(params: {
         .eq('user_id', user.id)
 
     if (updateError) {
-        throw new Error(`Failed to extend quiz: ${updateError.message}`)
+        return { error: `Failed to extend quiz: ${updateError.message}` }
     }
 
-    return newQuestions
+    return { data: newQuestions }
 }
 
 export async function submitQuiz(
     quizId: string,
     userAnswers: Record<number, any>,
     questions: any[],
-    visitedQuestionIndexes: number[]
+    visitedQuestionIndexes: number[],
+    evaluations: Record<number, { rating: number, explanation: string }> = {}
 ) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -1663,7 +1682,12 @@ export async function submitQuiz(
         const q = questions[questionIndex]
         const userAnswer = userAnswers[questionIndex]
         
-        if (q.type === 'single_mcq' || q.type === 'fill_in_blank') {
+        if (q.type === 'theoretical') {
+            const evalObj = evaluations[questionIndex]
+            if (evalObj && typeof evalObj.rating === 'number') {
+                score += (Math.max(0, Math.min(5, evalObj.rating)) / 5)
+            }
+        } else if (q.type === 'single_mcq' || q.type === 'fill_in_blank') {
             // Case-insensitive string matching for fill_in_blank just in case
             const normalizedUser = String(userAnswer || "").trim().toLowerCase()
             const normalizedCorrect = String(q.correct_answer || "").trim().toLowerCase()
@@ -1697,6 +1721,7 @@ export async function submitQuiz(
                 answers: userAnswers,
                 visited_question_indexes: visitedQuestionIndexes,
                 evaluated_questions: evaluatedQuestions,
+                ai_evaluations: evaluations,
             }
         })
 
@@ -1706,4 +1731,82 @@ export async function submitQuiz(
     }
 
     return resultId
+}
+
+export async function evaluateTheoreticalAnswer(question: string, userAnswer: string, referenceAnswer: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const apiKey = await getApiKeyInternal()
+    if (!apiKey) throw new Error('API Key missing. Please set it in Settings.')
+
+    const genAI = new GoogleGenerativeAI(apiKey)
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
+
+    const prompt = `
+You are a strict but fair professor grading a student's answer to a theoretical question.
+Question: "${question}"
+Student's Answer: "${userAnswer}"
+Reference Answer / Grading Rubric: "${referenceAnswer}"
+
+Evaluate the student's answer based on the reference answer.
+Provide a granular evaluation and return ONLY raw JSON in this exact format, with no markdown code blocks:
+{
+    "overall_score": 4.50, // Float between 0.00 and 5.00
+    "accuracy_score": 5.00, // Float between 0.00 and 5.00
+    "completeness_score": 4.00, // Float between 0.00 and 5.00
+    "clarity_score": 4.50, // Float between 0.00 and 5.00
+    "explanation": "Detailed explanation of why they received these scores...",
+    "ideal_answer": "A concise, expert-level summary of exactly what you expected the student to write based on the rubric. This is the baseline you are grading against.",
+    "detailed_analysis": {
+        "correct_aspects": ["Specific valid point from their answer", "Another correct point"],
+        "missing_concepts": ["Crucial concept they failed to mention entirely", "Another missing requirement"],
+        "misconceptions": ["A factually incorrect statement they made", "A misunderstanding of the topic"]
+    },
+    "improvement_suggestion": "A single, highly pinpoint and concise sentence on how to improve this answer."
+}
+`
+
+    const result = await model.generateContent(prompt)
+    const response = await result.response
+    let textInfo = response.text().trim()
+    
+    if (textInfo.startsWith('\`\`\`json')) {
+        textInfo = textInfo.replace(/^\`\`\`json/, '').replace(/\`\`\`$/, '').trim()
+    } else if (textInfo.startsWith('\`\`\`')) {
+        textInfo = textInfo.replace(/^\`\`\`/, '').replace(/\`\`\`$/, '').trim()
+    }
+    
+    try {
+        const parsed = JSON.parse(textInfo)
+        
+        // Handle potential legacy 'rating' key fallback 
+        const overall = typeof parsed.overall_score === 'number' ? parsed.overall_score : parseFloat(parsed.overall_score || parsed.rating) || 0;
+
+        return {
+            rating: overall, // Maintain legacy 'rating' key for backward compatibility in score calculation
+            overall_score: overall,
+            accuracy_score: typeof parsed.accuracy_score === 'number' ? parsed.accuracy_score : parseFloat(parsed.accuracy_score) || 0,
+            completeness_score: typeof parsed.completeness_score === 'number' ? parsed.completeness_score : parseFloat(parsed.completeness_score) || 0,
+            clarity_score: typeof parsed.clarity_score === 'number' ? parsed.clarity_score : parseFloat(parsed.clarity_score) || 0,
+            explanation: parsed.explanation || "No explanation provided.",
+            ideal_answer: parsed.ideal_answer || "No ideal answer provided.",
+            detailed_analysis: parsed.detailed_analysis || { correct_aspects: [], missing_concepts: [], misconceptions: [] },
+            improvement_suggestion: parsed.improvement_suggestion || ""
+        }
+    } catch (e) {
+        console.error("Failed to parse evaluation:", textInfo, e)
+        return { 
+            rating: 0, 
+            overall_score: 0,
+            accuracy_score: 0,
+            completeness_score: 0,
+            clarity_score: 0,
+            explanation: "AI evaluation failed to parse.", 
+            ideal_answer: "AI evaluation failed.",
+            detailed_analysis: { correct_aspects: [], missing_concepts: [], misconceptions: [] }, 
+            improvement_suggestion: "Error processing evaluation." 
+        }
+    }
 }

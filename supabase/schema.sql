@@ -43,6 +43,9 @@ create policy "Users can view their own activity"
   on activity_logs for select
   using ((select auth.uid()) = user_id);
 
+create index if not exists idx_activity_logs_user_date
+  on activity_logs (user_id, activity_date desc);
+
 -- RLS for Profiles
 alter table profiles enable row level security;
 
@@ -92,6 +95,9 @@ do $$ begin
 end $$;
 create policy "Users can update own subjects" on subjects for update using (auth.uid() = user_id);
 
+create index if not exists idx_subjects_user_created
+  on subjects (user_id, created_at desc);
+
 -- 2. TOPICS
 do $$ begin
   if not exists (select 1 from pg_type where typname = 'topic_status') then
@@ -134,6 +140,12 @@ create policy "Users can delete own topics" on topics for delete using (
   exists (select 1 from subjects where subjects.id = topics.subject_id and subjects.user_id = auth.uid())
 );
 
+create index if not exists idx_topics_subject_status
+  on topics (subject_id, status);
+
+create index if not exists idx_topics_subject_created
+  on topics (subject_id, created_at desc);
+
 -- 3. TOPIC DEPENDENCIES
 create table if not exists topic_dependencies (
   parent_topic_id uuid references topics(id) on delete cascade not null,
@@ -162,6 +174,9 @@ create policy "Users can manage dependencies" on topic_dependencies for all usin
     where topics.id = topic_dependencies.parent_topic_id and subjects.user_id = auth.uid()
   )
 );
+
+create index if not exists idx_topic_dependencies_child
+  on topic_dependencies (child_topic_id);
 
 -- 4. TOPIC CONTENT
 create table if not exists topic_content (
@@ -219,6 +234,9 @@ create policy "Users can manage own flashcards" on flashcards for all using (
   )
 );
 
+create index if not exists idx_flashcards_topic_review
+  on flashcards (topic_id, next_review_at);
+
 -- 6. QUIZZES
 create table if not exists quizzes (
   id uuid default uuid_generate_v4() primary key,
@@ -245,6 +263,12 @@ create policy "Users can insert own quizzes" on quizzes for insert with check (a
 create policy "Users can update own quizzes" on quizzes for update using (auth.uid() = user_id);
 create policy "Users can delete own quizzes" on quizzes for delete using (auth.uid() = user_id);
 
+create index if not exists idx_quizzes_user_created
+  on quizzes (user_id, created_at desc);
+
+create index if not exists idx_quizzes_subject_created
+  on quizzes (subject_id, created_at desc);
+
 -- 7. QUIZ RESULTS
 create table if not exists quiz_results (
   id uuid default uuid_generate_v4() primary key,
@@ -269,6 +293,12 @@ create policy "Users can view own quiz results" on quiz_results for select using
 create policy "Users can insert own quiz results" on quiz_results for insert with check (auth.uid() = user_id);
 create policy "Users can update own quiz results" on quiz_results for update using (auth.uid() = user_id);
 create policy "Users can delete own quiz results" on quiz_results for delete using (auth.uid() = user_id);
+
+create index if not exists idx_quiz_results_user_created
+  on quiz_results (user_id, created_at desc);
+
+create index if not exists idx_quiz_results_quiz_created
+  on quiz_results (quiz_id, created_at desc);
 
 -- Trigger to handle new user signup
 create or replace function public.handle_new_user() 

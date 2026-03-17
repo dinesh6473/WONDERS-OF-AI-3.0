@@ -113,7 +113,13 @@ export function LearnClient() {
                                 </CardHeader>
                                 <CardContent className="space-y-2">
                                     <Button className="w-full justify-start bg-white/5 hover:bg-white/10 text-zinc-300" variant="ghost">Generate Flashcards</Button>
-                                    <Button className="w-full justify-start bg-white/5 hover:bg-white/10 text-zinc-300" variant="ghost">Take Quiz</Button>
+                                    <Button 
+                                        className="w-full justify-start bg-white/5 hover:bg-white/10 text-zinc-300" 
+                                        variant="ghost"
+                                        onClick={() => router.push(`/dashboard/quiz?topic_id=${selectedNode.id}&view=attempt`)}
+                                    >
+                                        Take Quiz
+                                    </Button>
                                 </CardContent>
                             </Card>
                         </div>

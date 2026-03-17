@@ -76,9 +76,27 @@ export function QuizConfigForm({
         }
     }
 
+    function handleQuestionCountChange(value: string) {
+        if (value === "") {
+            setQuestionCount("")
+            return
+        }
+
+        if (!/^\d+$/.test(value)) return
+
+        const normalizedValue = String(Math.min(20, Math.max(1, Number(value))))
+        setQuestionCount(normalizedValue)
+    }
+
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
         setErrorMsg(null)
+
+        const parsedQuestionCount = Number.parseInt(questionCount, 10)
+        if (!Number.isInteger(parsedQuestionCount) || parsedQuestionCount < 1 || parsedQuestionCount > 20) {
+            setErrorMsg("Please choose a question count between 1 and 20.")
+            return
+        }
 
         startTransition(async () => {
             try {
@@ -93,20 +111,24 @@ export function QuizConfigForm({
                 }
                 
                 // Call server action
-                const quizId = await generateQuiz({
+                const result = await generateQuiz({
                     subjectId: initialSubject?.id,
                     subjectName,
                     topics: finalTopics,
                     difficulty: parseInt(difficulty),
-                    count: parseInt(questionCount)
+                    count: parsedQuestionCount
                 })
 
-                if (quizId) {
-                    router.push(`/dashboard/quiz/${quizId}/take`)
+                if (result && result.error) {
+                    setErrorMsg(result.error)
+                } else if (result && result.quizId) {
+                    router.push(`/dashboard/quiz/${result.quizId}/take`)
+                } else {
+                    setErrorMsg("Failed to generate quiz. Check API Key or try again.")
                 }
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Quiz generation failed:", err)
-                setErrorMsg(err.message || "Failed to generate quiz. Check API Key or try again.")
+                setErrorMsg(err instanceof Error ? err.message : "Failed to generate quiz. Check API Key or try again.")
             }
         })
     }
@@ -150,7 +172,7 @@ export function QuizConfigForm({
                         <Label>Unlocked Topics</Label>
                         {initialTopics.length === 0 ? (
                             <div className="p-4 rounded-lg border border-dashed border-white/10 text-center text-sm text-zinc-500 bg-black/20">
-                                You haven't unlocked any specific topics yet. We'll generate a general quiz for {initialSubject.title}.
+                                You haven&apos;t unlocked any specific topics yet. We&apos;ll generate a general quiz for {initialSubject.title}.
                             </div>
                         ) : (
                             <div ref={topicsDropdownRef} className="relative">
@@ -250,18 +272,30 @@ export function QuizConfigForm({
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="count">Number of Questions</Label>
-                        <Input 
-                            id="count"
-                            type="number"
-                            min="1"
-                            required
-                            value={questionCount}
-                            onChange={(e) => setQuestionCount(e.target.value)}
-                            className="bg-black/50 border-white/10 text-white focus-visible:ring-blue-500"
-                        />
-                        <p className="text-xs text-zinc-500">
-                            Enter any positive number. We will keep generating until that exact count is reached with no duplicates.
+                        <Label htmlFor="question-count">Number of Questions (1-20)</Label>
+                        <div className="flex items-center gap-4">
+                            <Input
+                                id="question-count"
+                                type="number"
+                                min="1"
+                                max="20"
+                                inputMode="numeric"
+                                required
+                                value={questionCount}
+                                onChange={(e) => handleQuestionCountChange(e.target.value)}
+                                onBlur={() => {
+                                    if (questionCount === "") {
+                                        setQuestionCount("10")
+                                    }
+                                }}
+                                className="bg-black/50 border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-blue-500"
+                            />
+                            <span className="flex min-w-12 items-center justify-center rounded-md border border-blue-500/30 bg-blue-500/20 px-3 py-2 font-bold text-blue-400">
+                                {questionCount || "10"}
+                            </span>
+                        </div>
+                        <p className="text-xs text-zinc-500 px-1">
+                            Pick how many questions you want in this quiz.
                         </p>
                     </div>
                 </div>
