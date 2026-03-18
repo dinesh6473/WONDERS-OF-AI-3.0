@@ -332,7 +332,7 @@ export default async function QuizResultsPage({
                     </button>
                 </Link>
 
-                <Link href={`/dashboard/subject/${quizResult.quizzes.subject_name ? '?' : ''}`}>
+                <Link href={quizzesData?.subject_id ? `/dashboard/subject/${quizzesData.subject_id}` : '/dashboard'}>
                     <button className="flex items-center gap-2 bg-white text-black px-6 py-2.5 rounded-xl hover:bg-white/90 font-medium transition-all hover:scale-105">
                         Back to Dashboard
                         <ArrowRight className="w-4 h-4" />

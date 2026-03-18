@@ -1680,12 +1680,16 @@ export async function submitQuiz(
     for (let i = 0; i < visitedQuestionIndexes.length; i++) {
         const questionIndex = visitedQuestionIndexes[i]
         const q = questions[questionIndex]
+        if (!q) continue;
+
         const userAnswer = userAnswers[questionIndex]
         
         if (q.type === 'theoretical') {
             const evalObj = evaluations[questionIndex]
             if (evalObj && typeof evalObj.rating === 'number') {
-                score += (Math.max(0, Math.min(5, evalObj.rating)) / 5)
+                if (evalObj.rating >= 2.5) {
+                    score++
+                }
             }
         } else if (q.type === 'single_mcq' || q.type === 'fill_in_blank') {
             // Case-insensitive string matching for fill_in_blank just in case
