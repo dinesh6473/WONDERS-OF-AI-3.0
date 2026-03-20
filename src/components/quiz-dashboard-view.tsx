@@ -22,6 +22,8 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  Legend,
+  Label,
 } from "recharts"
 
 import { QuizConfigForm } from "@/components/quiz-config-form"
@@ -288,7 +290,7 @@ export function QuizDashboardView({
                     }}
                     formatter={(value) => [`${value ?? 0}%`, "Score"]}
                   />
-                  <Bar dataKey="score" radius={[10, 10, 0, 0]} fill="#60a5fa" />
+                  <Bar dataKey="score" radius={[10, 10, 0, 0]} fill="#60a5fa" maxBarSize={48} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -311,10 +313,18 @@ export function QuizDashboardView({
                     innerRadius={62}
                     outerRadius={92}
                     paddingAngle={3}
+                    label={({ percent }) => (percent ?? 0) > 0 ? `${((percent ?? 0) * 100).toFixed(0)}%` : ''}
+                    labelLine={false}
                   >
                     {analytics.outcomeData.map((entry) => (
                       <Cell key={entry.name} fill={entry.color} />
                     ))}
+                    <Label
+                      value={analytics.totalQuestionsAttempted}
+                      position="center"
+                      fill="#fff"
+                      style={{ fontSize: "24px", fontWeight: "bold" }}
+                    />
                   </Pie>
                   <Tooltip
                     contentStyle={{
@@ -324,6 +334,7 @@ export function QuizDashboardView({
                       color: "#fff",
                     }}
                   />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>

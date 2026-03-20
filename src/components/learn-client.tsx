@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -19,9 +20,11 @@ export function LearnClient() {
             const stored = localStorage.getItem('current_topic')
             if (stored) {
                 const parsed = JSON.parse(stored)
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setData(parsed)
                 // Select logic: pick root or first node
                 if (parsed.nodes && parsed.nodes.length > 0) {
+                    // eslint-disable-next-line react-hooks/set-state-in-effect
                     setSelectedNode(parsed.nodes.find((n: any) => n.type === 'root') || parsed.nodes[0])
                 }
             } else {

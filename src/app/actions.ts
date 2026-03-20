@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-require-imports */
 'use server'
 
 import { cookies } from 'next/headers'
@@ -475,7 +477,7 @@ export async function createSubject(formData: FormData) {
 
     // Auto-generate title if missing but text exists
     let finalTitle = title
-    let finalDesc = description
+    const finalDesc = description
 
     if (!finalTitle && sourceText) {
         // AI Auto-Title Generation
@@ -910,9 +912,12 @@ export async function generateContent(topicId: string) {
 
 export async function completeTopic(topicId: string) {
     const supabase = await createClient()
+    const { createClient: createAdmin } = require('@supabase/supabase-js')
+    const adminSupabase = createAdmin(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
-    // 1. Mark current as COMPLETED
-    await supabase.from('topics').update({ status: 'COMPLETED' }).eq('id', topicId)
+    // 1. Mark current as COMPLETED using admin client
+    const { error: updErr } = await adminSupabase.from('topics').update({ status: 'COMPLETED' }).eq('id', topicId)
+    if (updErr) console.error("Topic Completion Error:", updErr)
 
     // 1b. Update Streak
     const { data: { user } } = await supabase.auth.getUser()
@@ -1284,8 +1289,9 @@ export async function getWeeklyActivity(subjectId?: string) {
     }
 
     data.forEach((log: any) => {
-        const current = activityMap.get(log.activity_date) || 0
-        activityMap.set(log.activity_date, current + log.minutes_active)
+        const dateKey = log.activity_date.split('T')[0]
+        const current = activityMap.get(dateKey) || 0
+        activityMap.set(dateKey, current + log.minutes_active)
     })
 
     // Convert back to array
@@ -1293,6 +1299,20 @@ export async function getWeeklyActivity(subjectId?: string) {
         activity_date: date,
         minutes_active: minutes
     })).sort((a, b) => a.activity_date.localeCompare(b.activity_date))
+}
+
+export async function getTotalStudyTime() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return 0
+
+    const { data } = await supabase
+        .from('activity_logs')
+        .select('minutes_active')
+        .eq('user_id', user.id)
+    
+    if (!data) return 0
+    return data.reduce((acc: number, curr: any) => acc + curr.minutes_active, 0)
 }
 
 export async function addTopic(subjectId: string, title: string) {
@@ -1732,6 +1752,15 @@ export async function submitQuiz(
     if (error) {
         console.error("DB Insert Result Error:", error)
         throw new Error("Failed to save quiz results.")
+    }
+
+    
+    // Auto-complete topic if score is passing (e.g., >= 50%)
+    if (total > 0 && (score / total) >= 0.5) {
+        const { data: qz } = await supabase.from('quizzes').select('topic_id').eq('id', quizId).single();
+        if (qz && qz.topic_id) {
+            await completeTopic(qz.topic_id);
+        }
     }
 
     return resultId

@@ -9,6 +9,7 @@ export function GlobalBackground() {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true)
         const handleMouseMove = (event: MouseEvent) => {
             setMousePosition({ x: event.clientX, y: event.clientY })

@@ -1,0 +1,257 @@
+
+> learnify-web@0.1.0 lint
+> eslint
+
+(node:26564) ESLintIgnoreWarning: The ".eslintignore" file is no longer supported. Switch to using the "ignores" property in "eslint.config.js": https://eslint.org/docs/latest/use/configure/migration-guide#ignoring-files
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\fix_eslint.js
+  1:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\next.config.ts
+  4:7  warning  'withPWA' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\public\sw.js
+  1:156  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:209  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:626  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\public\workbox-f1770938.js
+  1:49     warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:87     warning  't' is defined but never used                                          @typescript-eslint/no-unused-vars
+  1:211    warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:257    warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:298    warning  't' is defined but never used                                          @typescript-eslint/no-unused-vars
+  1:381    warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:642    warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:813    warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:989    warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:1093   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:1738   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:2263   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:3058   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:3102   warning  't' is defined but never used                                          @typescript-eslint/no-unused-vars
+  1:3598   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:3727   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:7052   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:7234   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:7954   warning  'i' is defined but never used                                          @typescript-eslint/no-unused-vars
+  1:7962   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:8066   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:8368   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:9440   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:9550   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:9566   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:9627   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:9962   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:10038  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:10065  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:10081  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:10163  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:10963  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:11007  warning  't' is defined but never used                                          @typescript-eslint/no-unused-vars
+  1:11122  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:11194  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:11301  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:11382  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:11623  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:11941  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:12060  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:12464  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:12684  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:13012  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:13272  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:13319  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:13367  warning  't' is defined but never used                                          @typescript-eslint/no-unused-vars
+  1:14423  warning  't' is defined but never used                                          @typescript-eslint/no-unused-vars
+  1:14555  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:14599  warning  't' is defined but never used                                          @typescript-eslint/no-unused-vars
+  1:15097  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:15191  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:15404  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:15514  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:16025  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:16057  warning  't' is defined but never used                                          @typescript-eslint/no-unused-vars
+  1:16165  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:16591  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:16958  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:17076  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:17178  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:17458  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:17719  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:17903  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:19089  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:20040  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:20129  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:20260  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:20317  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:20514  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:20635  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:20768  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:20988  warning  't' is defined but never used                                          @typescript-eslint/no-unused-vars
+  1:21080  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:21657  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:21768  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:21988  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:22227  warning  'e' is defined but never used                                          @typescript-eslint/no-unused-vars
+  1:22385  warning  's' is defined but never used                                          @typescript-eslint/no-unused-vars
+  1:22450  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:22748  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:22962  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:23349  warning  't' is defined but never used                                          @typescript-eslint/no-unused-vars
+  1:23479  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\app\dashboard\community\page.tsx
+   6:32  warning  'BookOpen' is defined but never used            @typescript-eslint/no-unused-vars
+  14:12  warning  'isPending' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\app\dashboard\quiz\[id]\results\page.tsx
+  15:13  warning  'id' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\app\dashboard\settings\page.tsx
+   8:37  warning  'deleteGeminiKey' is defined but never used  @typescript-eslint/no-unused-vars
+  12:12  warning  'name' is assigned a value but never used    @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\app\dashboard\subject\[id]\page.tsx
+   5:28  warning  'Share2' is defined but never used    @typescript-eslint/no-unused-vars
+   5:51  warning  'Plus' is defined but never used      @typescript-eslint/no-unused-vars
+   5:65  warning  'LinkIcon' is defined but never used  @typescript-eslint/no-unused-vars
+   5:75  warning  'Sparkles' is defined but never used  @typescript-eslint/no-unused-vars
+   9:10  warning  'Button' is defined but never used    @typescript-eslint/no-unused-vars
+  16:10  warning  'Switch' is defined but never used    @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\android-install-prompt.tsx
+  15:11  warning  'isDismissed' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  18:11  warning  'isMobile' is assigned a value but never used     @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\app-sidebar.tsx
+  109:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\code-block.tsx
+   4:23  warning  'Terminal' is defined but never used  @typescript-eslint/no-unused-vars
+   5:10  warning  'cn' is defined but never used        @typescript-eslint/no-unused-vars
+  13:54  warning  'title' is defined but never used     @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\code-playground.tsx
+  6:10  warning  'Tabs' is defined but never used         @typescript-eslint/no-unused-vars
+  6:16  warning  'TabsList' is defined but never used     @typescript-eslint/no-unused-vars
+  6:26  warning  'TabsTrigger' is defined but never used  @typescript-eslint/no-unused-vars
+  6:39  warning  'TabsContent' is defined but never used  @typescript-eslint/no-unused-vars
+  7:10  warning  'Play' is defined but never used         @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\dashboard-assistant.tsx
+  8:49  warning  'ChevronUp' is defined but never used    @typescript-eslint/no-unused-vars
+  8:60  warning  'ChevronDown' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\dashboard-client.tsx
+  5:10  warning  'Input' is defined but never used           @typescript-eslint/no-unused-vars
+  6:10  warning  'KnowledgeGraph' is defined but never used  @typescript-eslint/no-unused-vars
+  8:10  warning  'Brain' is defined but never used           @typescript-eslint/no-unused-vars
+  8:17  warning  'Sparkles' is defined but never used        @typescript-eslint/no-unused-vars
+  8:27  warning  'Loader2' is defined but never used         @typescript-eslint/no-unused-vars
+  8:36  warning  'Search' is defined but never used          @typescript-eslint/no-unused-vars
+  8:44  warning  'ArrowRight' is defined but never used      @typescript-eslint/no-unused-vars
+  9:10  warning  'cn' is defined but never used              @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\dashboard-header.tsx
+  57:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\flashcard-carousel.tsx
+  6:47  warning  'Check' is defined but never used            @typescript-eslint/no-unused-vars
+  6:54  warning  'X' is defined but never used                @typescript-eslint/no-unused-vars
+  7:18  warning  'AnimatePresence' is defined but never used  @typescript-eslint/no-unused-vars
+  8:10  warning  'cn' is defined but never used               @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\global-background.tsx
+  7:13  warning  'theme' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\graph-visualizer.tsx
+   15:34  warning  'useMemo' is defined but never used                                                                                           @typescript-eslint/no-unused-vars
+  107:8   warning  React Hook useEffect has missing dependencies: 'setEdges' and 'setNodes'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\header-actions.tsx
+   6:10  warning  'Settings' is defined but never used                    @typescript-eslint/no-unused-vars
+   6:20  warning  'Key' is defined but never used                         @typescript-eslint/no-unused-vars
+   6:25  warning  'Flame' is defined but never used                       @typescript-eslint/no-unused-vars
+   8:10  warning  'GeminiKeyModal' is defined but never used              @typescript-eslint/no-unused-vars
+  17:12  warning  'isKeyModalOpen' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  17:28  warning  'setIsKeyModalOpen' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  18:12  warning  'streak' is assigned a value but never used             @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\knowledge-graph.tsx
+    2:34  warning  'useMemo' is defined but never used                                                                                           @typescript-eslint/no-unused-vars
+  104:8   warning  React Hook useEffect has missing dependencies: 'setEdges' and 'setNodes'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\landing-hero.tsx
+    4:32  warning  'Globe' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+    4:39  warning  'Layers' is defined but never used                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+    4:47  warning  'Cpu' is defined but never used                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+   18:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  103:10  warning  'FeatureCard' is defined but never used                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\learn-client.tsx
+   8:10  warning  'Brain' is defined but never used                                                                   @typescript-eslint/no-unused-vars
+   9:52  warning  'CardDescription' is defined but never used                                                         @typescript-eslint/no-unused-vars
+  27:21  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  33:18  warning  'e' is defined but never used                                                                       @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\mermaid-diagram.tsx
+  20:31  warning  'err' is defined but never used      @typescript-eslint/no-unused-vars
+  46:79  warning  'content' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\quiz-take-flow.tsx
+   13:5   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+   43:5   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+   73:14  warning  'handleSingleSelect' is defined but never used                                                         @typescript-eslint/no-unused-vars
+   78:14  warning  'handleMultiSelect' is defined but never used                                                          @typescript-eslint/no-unused-vars
+  122:9   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  166:14  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  216:22  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  483:1   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  505:1   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\settings-dialog.tsx
+  16:20  warning  'LogOut' is defined but never used  @typescript-eslint/no-unused-vars
+  17:10  warning  'logout' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\subject-header-actions.tsx
+  6:37  warning  'LinkIcon' is defined but never used  @typescript-eslint/no-unused-vars
+  6:53  warning  'Check' is defined but never used     @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\topic-node.tsx
+  4:41  warning  'BookOpen' is defined but never used  @typescript-eslint/no-unused-vars
+  4:51  warning  'Star' is defined but never used      @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\topic-viewer.tsx
+    6:10  warning  'Card' is defined but never used          @typescript-eslint/no-unused-vars
+    6:16  warning  'CardContent' is defined but never used   @typescript-eslint/no-unused-vars
+    7:10  warning  'ScrollArea' is defined but never used    @typescript-eslint/no-unused-vars
+    8:10  warning  'BookOpen' is defined but never used      @typescript-eslint/no-unused-vars
+    8:34  warning  'ChevronRight' is defined but never used  @typescript-eslint/no-unused-vars
+    8:48  warning  'Play' is defined but never used          @typescript-eslint/no-unused-vars
+    8:54  warning  'RotateCcw' is defined but never used     @typescript-eslint/no-unused-vars
+    8:85  warning  'FileText' is defined but never used      @typescript-eslint/no-unused-vars
+    8:95  warning  'Printer' is defined but never used       @typescript-eslint/no-unused-vars
+   15:10  warning  'CodeBlock' is defined but never used     @typescript-eslint/no-unused-vars
+  242:48  warning  'node' is defined but never used          @typescript-eslint/no-unused-vars
+  243:44  warning  'node' is defined but never used          @typescript-eslint/no-unused-vars
+  244:44  warning  'node' is defined but never used          @typescript-eslint/no-unused-vars
+  245:44  warning  'node' is defined but never used          @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\components\up-next-list.tsx
+   2:29  warning  'CardHeader' is defined but never used  @typescript-eslint/no-unused-vars
+   2:41  warning  'CardTitle' is defined but never used   @typescript-eslint/no-unused-vars
+   4:16  warning  'RotateCcw' is defined but never used   @typescript-eslint/no-unused-vars
+  39:33  warning  'i' is defined but never used           @typescript-eslint/no-unused-vars
+
+C:\Users\karte\OneDrive\Pictures\Wonder\WONDERS-OF-AI-3.0\src\hooks\use-toast.ts
+   4:10  warning  'useState' is defined but never used                     @typescript-eslint/no-unused-vars
+   4:20  warning  'useEffect' is defined but never used                    @typescript-eslint/no-unused-vars
+   6:7   warning  'TOAST_LIMIT' is assigned a value but never used         @typescript-eslint/no-unused-vars
+   7:7   warning  'TOAST_REMOVE_DELAY' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   9:6   warning  'ToasterToast' is defined but never used                 @typescript-eslint/no-unused-vars
+  27:19  warning  'toastId' is defined but never used                      @typescript-eslint/no-unused-vars
+
+✖ 187 problems (1 error, 186 warnings)
+  0 errors and 8 warnings potentially fixable with the `--fix` option.
+

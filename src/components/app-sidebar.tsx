@@ -39,6 +39,8 @@ export function AppSidebar() {
     const pathname = usePathname()
     const [isOpen, setIsOpen] = useState(false)
     const [isCollapsed, setIsCollapsed] = useState(true)
+    const [isHovered, setIsHovered] = useState(false)
+    const effectivelyCollapsed = isCollapsed && !isHovered
     const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
     return (
@@ -50,7 +52,7 @@ export function AppSidebar() {
                 className={cn(
                     "fixed top-[calc(1rem+env(safe-area-inset-top))] left-4 z-50 text-white bg-zinc-900/50 backdrop-blur-md border border-white/10 transition-all duration-300",
                     "md:hidden", 
-                    !isCollapsed && "md:left-[17rem]"
+                    !effectivelyCollapsed && "md:left-[17rem]"
                 )}
                 onClick={() => setIsOpen(true)}
             >
@@ -74,8 +76,11 @@ export function AppSidebar() {
                 isOpen ? "translate-x-0" : "-translate-x-full",
                 // Desktop Styles (Override Mobile)
                 "md:sticky md:translate-x-0 md:top-0",
-                isCollapsed ? "md:w-20" : "md:w-64 md:shadow-none"
-            )}>
+                effectivelyCollapsed ? "md:w-20" : "md:w-64 md:shadow-none"
+            )}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            >
 
                 {/* Mobile Close Button */}
                 <Button
@@ -90,7 +95,7 @@ export function AppSidebar() {
                 {/* Desktop Toggle Button */}
                 <div className={cn(
                     "hidden md:flex py-4 transition-all duration-300",
-                    isCollapsed ? "justify-center px-0" : "justify-end px-4"
+                    effectivelyCollapsed ? "justify-center px-0" : "justify-end px-4"
                 )}>
                     <Button
                         variant="ghost"
@@ -104,13 +109,13 @@ export function AppSidebar() {
 
                 <div className={cn(
                     "mb-8 flex items-center w-full px-4 transition-all duration-300 mt-8 md:mt-0",
-                    isCollapsed ? "justify-center" : "justify-start px-6"
+                    effectivelyCollapsed ? "justify-center" : "justify-start px-6"
                 )}>
                     <img src="/logo.jpg" alt="LearnX Logo" className="h-10 w-10 min-w-[2.5rem] rounded-xl object-cover shadow-lg bg-white shrink-0" />
                     {/* Text: Visible on Mobile OR Desktop Expanded */}
                     <span className={cn(
                         "ml-4 font-bold text-xl text-white transition-all duration-300 whitespace-nowrap",
-                        isCollapsed ? "md:opacity-0 md:w-0" : "md:opacity-100 md:w-auto",
+                        effectivelyCollapsed ? "md:opacity-0 md:w-0" : "md:opacity-100 md:w-auto",
                         "opacity-100" // Always visible on mobile drawer
                     )}>
                         LearnX
@@ -131,18 +136,18 @@ export function AppSidebar() {
                                     variant="ghost"
                                     className={cn(
                                         "w-full flex items-center h-12 rounded-xl transition-all duration-200",
-                                        isCollapsed ? "justify-center px-0" : "justify-start px-3",
+                                        effectivelyCollapsed ? "justify-center px-0" : "justify-start px-3",
                                         isActive
                                             ? "bg-blue-600/10 text-blue-400 hover:bg-blue-600/20"
                                             : "text-zinc-400 hover:text-white hover:bg-white/5",
-                                        !isActive && !isCollapsed && "md:hover:pl-4"
+                                        !isActive && !effectivelyCollapsed && "md:hover:pl-4"
                                     )}
                                 >
                                     <item.icon className={cn("h-6 w-6 min-w-[1.5rem] shrink-0", isActive ? "text-blue-400" : "text-zinc-400")} />
 
                                     <span className={cn(
                                         "ml-4 font-medium transition-all duration-300 whitespace-nowrap",
-                                        isCollapsed ? "md:opacity-0 md:w-0" : "md:opacity-100 md:w-auto",
+                                        effectivelyCollapsed ? "md:opacity-0 md:w-0" : "md:opacity-100 md:w-auto",
                                         "opacity-100", // Mobile always visible
                                         isActive ? "text-white" : "text-zinc-400"
                                     )}>
@@ -161,13 +166,13 @@ export function AppSidebar() {
                         onClick={() => setShowLogoutDialog(true)}
                         className={cn(
                             "w-full flex items-center h-12 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-red-950/20",
-                            isCollapsed ? "justify-center px-0" : "justify-start px-3"
+                            effectivelyCollapsed ? "justify-center px-0" : "justify-start px-3"
                         )}
                     >
                         <LogOut className="h-6 w-6 min-w-[1.5rem] shrink-0" />
                         <span className={cn(
                             "ml-4 font-medium transition-all duration-300 whitespace-nowrap",
-                            isCollapsed ? "md:opacity-0 md:w-0" : "md:opacity-100 md:w-auto",
+                            effectivelyCollapsed ? "md:opacity-0 md:w-0" : "md:opacity-100 md:w-auto",
                             "opacity-100"
                         )}>
                             Sign Out

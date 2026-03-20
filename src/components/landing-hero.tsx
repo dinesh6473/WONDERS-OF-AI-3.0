@@ -1,9 +1,39 @@
+"use client"
+
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { Brain, Sparkles, Zap, Globe, Layers, Cpu } from 'lucide-react'
+import { Brain, Sparkles, Zap } from 'lucide-react'
+import { useState, useEffect } from 'react'
 
 export function LandingHero({ isLoggedIn }: { isLoggedIn?: boolean }) {
+    const [text1, setText1] = useState('')
+    const [text2, setText2] = useState('')
+    
+    useEffect(() => {
+        const fullText1 = "Turn Any Topic Into a "
+        const fullText2 = "Structured Knowledge Graph"
+        
+        let current1 = ''
+        let current2 = ''
+        let i = 0
+        
+        const interval = setInterval(() => {
+            if (i < fullText1.length) {
+                current1 += fullText1[i]
+                setText1(current1)
+            } else if (i < fullText1.length + fullText2.length) {
+                current2 += fullText2[i - fullText1.length]
+                setText2(current2)
+            } else {
+                clearInterval(interval)
+            }
+            i++
+        }, 50)
+        
+        return () => clearInterval(interval)
+    }, [])
+
     return (
         <div className="min-h-screen text-foreground selection:bg-blue-500/30 overflow-hidden relative">
             {/* 
@@ -55,10 +85,13 @@ export function LandingHero({ isLoggedIn }: { isLoggedIn?: boolean }) {
                     <span>The Future of Learning is Here</span>
                 </div>
 
-                <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-8 max-w-5xl bg-gradient-to-b from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100 drop-shadow-sm">
-                    Turn Any Topic Into a <br />
-                    <span className="text-primary">Structured Knowledge Graph</span>
-                </h1>
+                <div className="min-h-[180px] md:min-h-[220px] flex items-center justify-center w-full">
+                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-8 max-w-5xl bg-gradient-to-b from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100 drop-shadow-sm">
+                        {text1} <br className="hidden sm:block" />
+                        <span className="text-primary">{text2}</span>
+                        <span className="animate-pulse border-r-4 border-primary ml-1 md:ml-2 inline-block h-[0.8em] align-middle -translate-y-1" />
+                    </h1>
+                </div>
 
                 <p className="text-xl text-muted-foreground max-w-2xl mb-12 leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
                     Stop random studying. LearnX uses advanced AI to break down complex subjects into interconnected nodes, instant quizzes, and mastery paths.

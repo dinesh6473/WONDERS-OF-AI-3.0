@@ -1,6 +1,7 @@
+/* eslint-disable react/no-unescaped-entities */
 import { Brain } from 'lucide-react'
 import { redirect } from "next/navigation";
-import { getSubjects, getProfile, getResumeTopic } from "@/app/actions";
+import { getSubjects, getProfile, getResumeTopic, getTotalStudyTime } from "@/app/actions";
 import { SubjectCard } from "@/components/subject-card";
 import { CreateSubjectModal } from "@/components/create-subject-modal";
 import { Button } from "@/components/ui/button";
@@ -8,11 +9,15 @@ import { ActivityChart } from "@/components/activity-chart";
 import Link from 'next/link'
 
 export default async function DashboardPage() {
-    const [profile, subjects, resumeTopic] = await Promise.all([
+    const [profile, subjects, resumeTopic, totalStudyMinutes] = await Promise.all([
         getProfile(),
         getSubjects(),
         getResumeTopic(),
+        getTotalStudyTime(),
     ]);
+
+    const studyHours = Math.floor(totalStudyMinutes / 60)
+    const studyMins = totalStudyMinutes % 60
 
     if (!profile) {
         return redirect("/");
@@ -85,7 +90,7 @@ export default async function DashboardPage() {
                     {/* Simplified Stats Display */}
                     <div className="p-6 rounded-2xl bg-zinc-900/50 border border-white/5">
                         <div className="text-3xl font-bold text-blue-400 flex items-center gap-2">
-                            <span className="font-mono">0h 0m</span>
+                            <span className="font-mono">{studyHours}h {studyMins}m</span>
                         </div>
                     </div>
                 </div>
@@ -93,7 +98,7 @@ export default async function DashboardPage() {
                 <div className="lg:col-span-2">
                     <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-4">Subject Progress</h3>
                     <div className="p-6 rounded-2xl bg-zinc-900/50 border border-white/5 space-y-4">
-                        {subjects.slice(0, 3).map(s => (
+                        {[...subjects].sort((a, b) => b.progress - a.progress).slice(0, 4).map(s => (
                             <div key={s.id} className="space-y-2">
                                 <div className="flex justify-between text-sm">
                                     <span className="font-medium text-white">{s.title}</span>

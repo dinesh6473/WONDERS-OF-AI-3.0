@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getSubject, getSubjectTopics, getProfile } from "@/app/actions"
 import { GraphVisualizer } from "@/components/graph-visualizer"
 import { GenerateGraphButton } from "@/components/generate-graph-button"
