@@ -3,7 +3,7 @@
 
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
-import { Sparkles, Loader2, Link as LinkIcon, Plus, Check, FileQuestion } from 'lucide-react'
+import { Sparkles, Loader2, Plus, FileQuestion } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { generateTopics, addTopic } from '@/app/actions'
@@ -11,6 +11,7 @@ import { LinkTopicModal } from '@/components/link-topic-modal'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useRouter } from 'next/navigation'
 
 interface SubjectHeaderActionsProps {
     subjectId: string
@@ -18,8 +19,6 @@ interface SubjectHeaderActionsProps {
     hasApiKey?: boolean
     isOwner: boolean
 }
-
-import { useRouter } from 'next/navigation'
 
 export function SubjectHeaderActions({ subjectId, title, hasApiKey = false, isOwner }: SubjectHeaderActionsProps) {
     const router = useRouter()
@@ -36,19 +35,14 @@ export function SubjectHeaderActions({ subjectId, title, hasApiKey = false, isOw
     function handleGenerate() {
         startGenerating(async () => {
             try {
-                console.log("Starting generation...")
                 await generateTopics(subjectId)
-                console.log("Generation complete")
-                router.refresh() // Force reload to show new topics
+                router.refresh()
             } catch (error: any) {
-                console.error("Failed to generate:", error)
                 setErrorMessage(error.message || "An unexpected error occurred.")
                 setErrorModalOpen(true)
             }
         })
     }
-
-
 
     function handleAddTopic(e: React.FormEvent) {
         e.preventDefault()
@@ -66,7 +60,7 @@ export function SubjectHeaderActions({ subjectId, title, hasApiKey = false, isOw
     }
 
     return (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
             {/* AI Generate Button */}
             <Button
                 variant="outline"

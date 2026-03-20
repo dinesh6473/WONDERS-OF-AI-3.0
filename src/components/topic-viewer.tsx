@@ -14,7 +14,6 @@ import Link from 'next/link'
 import { CodePlayground } from '@/components/code-playground'
 import { CodeBlock } from '@/components/code-block'
 import { cn } from '@/lib/utils'
-
 import { MermaidDiagram } from '@/components/mermaid-diagram'
 import { useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -58,8 +57,7 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
     useEffect(() => {
         const interval = setInterval(() => {
             incrementActivity(1)
-        }, 60000) // Log 1 minute every 60 seconds
-
+        }, 60000)
         return () => clearInterval(interval)
     }, [])
 
@@ -71,8 +69,6 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
         })
     }
 
-
-
     // If content is missing, show generation prompt
     if (!content) {
         return (
@@ -80,18 +76,17 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
 
                 {/* Ambient Background Effects */}
                 <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/10 blur-[120px] rounded-full mix-blend-screen" />
-                    <div className="absolute top-1/3 left-1/3 w-[300px] h-[300px] bg-purple-600/10 blur-[100px] rounded-full mix-blend-screen" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/20 blur-[120px] rounded-full" />
+                    <div className="absolute top-1/3 left-1/3 w-[300px] h-[300px] bg-purple-600/15 blur-[100px] rounded-full" />
                 </div>
 
-                <div className="relative z-10 w-full max-w-3xl mx-auto p-8 md:p-12">
+                <div className="relative z-10 w-full max-w-3xl mx-auto p-4 sm:p-8 md:p-12">
 
-                    {/* Main Card */}
-                    <div className="relative backdrop-blur-2xl bg-black/20 border border-white/5 rounded-3xl shadow-2xl p-8 md:p-12 overflow-hidden group">
+                    {/* Main Card — solid zinc so it's visible on the black page */}
+                    <div className="relative bg-zinc-900/90 border border-zinc-700/60 rounded-3xl shadow-2xl shadow-black/60 p-8 md:p-12 overflow-hidden group">
 
-                        {/* Shimmer Border Effect */}
-                        <div className="absolute inset-0 border border-white/5 rounded-3xl pointer-events-none" />
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-30 pointer-events-none" />
+                        {/* Shimmer overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-30 pointer-events-none rounded-3xl" />
 
                         {/* Content */}
                         <div className="relative z-10 flex flex-col items-center text-center space-y-10">
@@ -113,45 +108,41 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
 
                             {/* Features Preview */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full text-left">
-                                <div className="group/item flex flex-col p-5 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all duration-300">
-                                    <div className="p-2.5 w-fit rounded-lg bg-indigo-500/20 text-indigo-400 mb-3 group-hover/item:scale-110 transition-transform">
+                                <div className="flex flex-col p-5 rounded-xl bg-zinc-800/70 border border-zinc-700/50 hover:bg-zinc-800 hover:border-zinc-600 transition-all duration-300">
+                                    <div className="p-2.5 w-fit rounded-lg bg-indigo-500/20 text-indigo-400 mb-3">
                                         <Share2 className="w-5 h-5" />
                                     </div>
                                     <div className="font-bold text-white mb-1">Knowledge Graph</div>
-                                    <div className="text-xs text-zinc-500 font-medium">Visual concept mapping</div>
+                                    <div className="text-xs text-zinc-400 font-medium">Visual concept mapping</div>
                                 </div>
-                                <div className="group/item flex flex-col p-5 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all duration-300">
-                                    <div className="p-2.5 w-fit rounded-lg bg-emerald-500/20 text-emerald-400 mb-3 group-hover/item:scale-110 transition-transform">
+                                <div className="flex flex-col p-5 rounded-xl bg-zinc-800/70 border border-zinc-700/50 hover:bg-zinc-800 hover:border-zinc-600 transition-all duration-300">
+                                    <div className="p-2.5 w-fit rounded-lg bg-emerald-500/20 text-emerald-400 mb-3">
                                         <Brain className="w-5 h-5" />
                                     </div>
                                     <div className="font-bold text-white mb-1">Smart Recall</div>
-                                    <div className="text-xs text-zinc-500 font-medium">AI-generated flashcards</div>
+                                    <div className="text-xs text-zinc-400 font-medium">AI-generated flashcards</div>
                                 </div>
-                                <div className="group/item flex flex-col p-5 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all duration-300">
-                                    <div className="p-2.5 w-fit rounded-lg bg-amber-500/20 text-amber-400 mb-3 group-hover/item:scale-110 transition-transform">
+                                <div className="flex flex-col p-5 rounded-xl bg-zinc-800/70 border border-zinc-700/50 hover:bg-zinc-800 hover:border-zinc-600 transition-all duration-300">
+                                    <div className="p-2.5 w-fit rounded-lg bg-amber-500/20 text-amber-400 mb-3">
                                         <CheckCircle2 className="w-5 h-5" />
                                     </div>
                                     <div className="font-bold text-white mb-1">Assessment</div>
-                                    <div className="text-xs text-zinc-500 font-medium">Quiz & Progress tracking</div>
+                                    <div className="text-xs text-zinc-400 font-medium">Quiz & Progress tracking</div>
                                 </div>
                             </div>
 
-                            {/* Divider with Start Button */}
-                            <div className="w-full pt-4 relative flex flex-col items-center justify-center">
-                                <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/0 via-zinc-900/0 to-zinc-900/0 pointer-events-none" />
-
+                            {/* Start Button */}
+                            <div className="w-full pt-4 flex flex-col items-center justify-center">
                                 <Button
                                     size="lg"
                                     onClick={handleGenerate}
                                     disabled={isGenerating || !hasApiKey}
                                     className={cn(
-                                        "relative group overflow-hidden w-full md:w-auto min-w-[280px] h-16 bg-white text-black hover:bg-zinc-200 transition-all rounded-full text-lg font-bold shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.5)] z-20",
+                                        "relative overflow-hidden w-full md:w-auto min-w-[280px] h-16 bg-white text-black hover:bg-zinc-200 transition-all rounded-full text-lg font-bold shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.5)] z-20",
                                         !hasApiKey && "opacity-50 grayscale cursor-not-allowed bg-zinc-800 text-zinc-500 shadow-none hover:shadow-none hover:bg-zinc-800",
                                         isGenerating && "cursor-wait"
                                     )}
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:animate-shimmer" />
-
                                     <span className="relative flex items-center justify-center gap-3">
                                         {isGenerating ? (
                                             <>
@@ -160,7 +151,7 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
                                             </>
                                         ) : (
                                             <>
-                                                <Wand2 className="w-5 h-5 text-indigo-600 group-hover:rotate-12 transition-transform duration-300" />
+                                                <Wand2 className="w-5 h-5 text-indigo-600" />
                                                 {hasApiKey ? 'Start Learning Journey' : 'Configure API Key'}
                                             </>
                                         )}
@@ -168,7 +159,7 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
                                 </Button>
 
                                 {!hasApiKey && (
-                                    <Link href="/dashboard/settings" className="mt-6 text-sm text-zinc-500 hover:text-white transition-colors underline underline-offset-4 decoration-zinc-800 hover:decoration-white">
+                                    <Link href="/dashboard/settings" className="mt-6 text-sm text-zinc-500 hover:text-white transition-colors underline underline-offset-4 decoration-zinc-700 hover:decoration-white">
                                         Go to Settings to add API Key
                                     </Link>
                                 )}
@@ -187,8 +178,6 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
 
             {/* Overview */}
             <section className="space-y-4 text-left relative px-4 md:px-0">
-
-
                 <span className="inline-block px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-sm font-medium border border-blue-500/20">
                     {topic.level}
                 </span>
@@ -203,7 +192,7 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
                 </div>
             </section>
 
-            {/* Code Playground (Visible only if practice code exists) */}
+            {/* Code Playground */}
             {content.practice_code && (
                 <section className="space-y-4 print:hidden max-w-4xl mx-auto">
                     <div className="flex items-center gap-2 mb-4">
@@ -222,11 +211,10 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
                 </section>
             )}
 
-            {/* Dynamic Sections rendering */}
+            {/* Dynamic Sections */}
             <section className="space-y-16">
                 {content.sections && content.sections.map((section: any, idx: number) => (
                     <div key={idx} className="relative space-y-8">
-                        {/* Section Marker */}
                         <div className="flex items-center gap-4">
                             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold shrink-0">
                                 {idx + 1}
@@ -234,7 +222,6 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
                             <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">{section.heading.replace(/^\d+\.\s*/, '')}</h2>
                         </div>
 
-                        {/* Content Prose */}
                         <div className="prose prose-invert prose-lg max-w-none text-zinc-300 leading-relaxed pl-4 md:pl-14 border-l-2 border-zinc-800">
                             <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
@@ -249,7 +236,6 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
                             </ReactMarkdown>
                         </div>
 
-                        {/* Chart (if present in this section) */}
                         {section.diagram && (
                             <div className="ml-4 md:ml-14 my-8">
                                 <div className="flex items-center gap-2 mb-4 text-indigo-400">
@@ -260,7 +246,6 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
                             </div>
                         )}
 
-                        {/* Table (if present in this section) */}
                         {section.table && (
                             <div className="ml-4 md:ml-14 my-8 overflow-hidden rounded-xl border border-white/10">
                                 <table className="w-full text-left text-sm">
@@ -275,9 +260,7 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
                                         {section.table.rows.map((row: string[], i: number) => (
                                             <tr key={i} className="hover:bg-white/5 transition-colors">
                                                 {row.map((cell: string, j: number) => (
-                                                    <td key={j} className="px-6 py-4 text-zinc-300 font-mono">
-                                                        {cell}
-                                                    </td>
+                                                    <td key={j} className="px-6 py-4 text-zinc-300 font-mono">{cell}</td>
                                                 ))}
                                             </tr>
                                         ))}
@@ -286,7 +269,6 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
                             </div>
                         )}
 
-                        {/* Example Block */}
                         {section.example && (
                             <div className="ml-4 md:ml-14 my-8 p-6 rounded-xl bg-purple-900/10 border border-purple-500/20">
                                 <div className="flex items-center gap-2 mb-3 text-purple-400">
@@ -294,9 +276,7 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
                                     <span className="text-sm font-bold uppercase tracking-wider">Example</span>
                                 </div>
                                 <div className="text-zinc-300 italic leading-relaxed prose prose-invert">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                        {section.example}
-                                    </ReactMarkdown>
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.example}</ReactMarkdown>
                                 </div>
                             </div>
                         )}
@@ -310,60 +290,52 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
                     <span className="text-emerald-400 font-bold tracking-widest uppercase text-sm mb-4 block">Applied Science</span>
                     <h3 className="text-3xl font-bold text-white mb-6">{content.real_world_application.title}</h3>
                     <div className="text-lg text-emerald-100/70 leading-relaxed prose prose-invert max-w-none">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {content.real_world_application.description}
-                        </ReactMarkdown>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content.real_world_application.description}</ReactMarkdown>
                     </div>
                 </section>
             )}
 
             {/* Mermaid Chart */}
-            {
-                content.mermaid_chart && (
-                    <section className="space-y-6">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
-                                <Flame className="w-6 h-6" />
-                            </div>
-                            <h2 className="text-2xl font-bold text-white">Process Flow</h2>
+            {content.mermaid_chart && (
+                <section className="space-y-6">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+                            <Flame className="w-6 h-6" />
                         </div>
-                        <MermaidDiagram chart={content.mermaid_chart} />
-                    </section>
-                )
-            }
+                        <h2 className="text-2xl font-bold text-white">Process Flow</h2>
+                    </div>
+                    <MermaidDiagram chart={content.mermaid_chart} />
+                </section>
+            )}
 
             {/* Comparison Table */}
-            {
-                content.comparison_table && (
-                    <section className="space-y-6">
-                        <h2 className="text-2xl font-bold text-white">Feature Comparison</h2>
-                        <div className="overflow-hidden rounded-xl border border-white/10">
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-zinc-900 text-zinc-400">
-                                    <tr>
-                                        {content.comparison_table.headers.map((h: string, i: number) => (
-                                            <th key={i} className="px-6 py-4 font-medium uppercase tracking-wider">{h}</th>
+            {content.comparison_table && (
+                <section className="space-y-6">
+                    <h2 className="text-2xl font-bold text-white">Feature Comparison</h2>
+                    <div className="overflow-hidden rounded-xl border border-white/10">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-zinc-900 text-zinc-400">
+                                <tr>
+                                    {content.comparison_table.headers.map((h: string, i: number) => (
+                                        <th key={i} className="px-6 py-4 font-medium uppercase tracking-wider">{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5 bg-zinc-950/50">
+                                {content.comparison_table.rows.map((row: string[], i: number) => (
+                                    <tr key={i} className="hover:bg-white/5 transition-colors">
+                                        {row.map((cell: string, j: number) => (
+                                            <td key={j} className="px-6 py-4 text-zinc-300 font-mono">{cell}</td>
                                         ))}
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5 bg-zinc-950/50">
-                                    {content.comparison_table.rows.map((row: string[], i: number) => (
-                                        <tr key={i} className="hover:bg-white/5 transition-colors">
-                                            {row.map((cell: string, j: number) => (
-                                                <td key={j} className="px-6 py-4 text-zinc-300 font-mono">
-                                                    {cell}
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-                )
-            }
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            )}
 
-            {/* Mistakes */}
+            {/* Common Mistakes */}
             {content.common_mistakes && (
                 <section className="bg-red-950/10 border border-red-900/20 rounded-2xl p-8">
                     <h3 className="text-xl font-bold text-red-400 mb-6">Common Mistakes to Avoid</h3>
@@ -378,8 +350,7 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
                 </section>
             )}
 
-            {/* Flashcards */}
-            {/* Flashcards Toggle Button */}
+            {/* Flashcards Toggle */}
             {content.flashcards && content.flashcards.length > 0 && (
                 <section className="flex justify-center py-8">
                     <Button
@@ -393,7 +364,7 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
                 </section>
             )}
 
-            {/* Flashcards Modal Overlay */}
+            {/* Flashcards Overlay */}
             {showFlashcards && content.flashcards && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950 p-4 animate-in fade-in duration-200">
                     <div className="w-full max-w-4xl relative">
@@ -410,7 +381,6 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
                             <p className="text-zinc-400">Test your knowledge</p>
                         </div>
                         <FlashcardCarousel flashcards={content.flashcards} />
-
                         <div className="flex justify-center mt-8">
                             <Button
                                 onClick={() => setShowFlashcards(false)}
@@ -425,12 +395,12 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
             )}
 
             {/* Complete Action */}
-            <div className="max-w-3xl mx-auto mt-12 mb-20 flex items-center justify-between gap-4">
+            <div className="max-w-3xl mx-auto mt-12 mb-20 flex flex-wrap items-center justify-between gap-4">
                 <Button variant="outline" onClick={() => router.back()} className="border-white/10 hover:bg-white/5">
                     Back to Map
                 </Button>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                     <Button
                         asChild
                         disabled={!hasApiKey}
@@ -470,9 +440,10 @@ export function TopicViewer({ topic, content, hasApiKey = false }: TopicViewerPr
                     </Button>
                 </div>
             </div>
+
             {/* AI Tutor Chat */}
             <ChatInterface topicId={topic.id} title={topic.title} hasApiKey={hasApiKey} />
 
-        </div >
+        </div>
     )
 }

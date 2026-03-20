@@ -41,7 +41,7 @@ export default async function LearnPage({ params }: { params: Promise<{ id: stri
                 </div>
             </header>
 
-            <main className="pt-24 px-6">
+            <main className="pt-24 px-4 sm:px-6 pb-16">
                 <TopicViewer topic={topic} content={content?.content_json} hasApiKey={hasApiKey} />
             </main>
         </div>

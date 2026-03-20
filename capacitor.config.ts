@@ -2,10 +2,10 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.learnify.rep',
-  appName: 'Learnify Rep',
+  appName: 'LearnX',
   webDir: 'public',
   server: {
-    url: 'https://learnify-rep1.vercel.app', // Your Vercel deployment URL
+    url: 'https://wonders-of-ai-3-0.vercel.app', // Your Vercel deployment URL
     cleartext: false,
     androidScheme: 'https'
   },

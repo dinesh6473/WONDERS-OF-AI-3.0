@@ -24,7 +24,7 @@ export default async function DashboardPage() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-6 py-10 space-y-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
 
             {/* Header */}
             <div className="flex flex-col items-start gap-4 md:flex-row md:items-end md:justify-between">
@@ -37,7 +37,7 @@ export default async function DashboardPage() {
 
             {/* Continue Learning Section */}
             {resumeTopic && (
-                <div className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border border-blue-500/20 rounded-2xl p-6 flex items-center justify-between mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
+                <div className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border border-blue-500/20 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
                     <div className="space-y-2">
                         <div className="flex items-center gap-2 text-blue-400 text-sm font-medium uppercase tracking-wider">
                             <Brain className="w-4 h-4" />
@@ -46,8 +46,8 @@ export default async function DashboardPage() {
                         <h2 className="text-2xl font-bold text-white">{resumeTopic.title}</h2>
                         <p className="text-zinc-400">In {resumeTopic.subjects.title}</p>
                     </div>
-                    <Link href={`/dashboard/learn/${resumeTopic.id}`}>
-                        <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-white rounded-full px-8 shadow-lg shadow-blue-900/20">
+                    <Link href={`/dashboard/learn/${resumeTopic.id}`} className="shrink-0">
+                        <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white rounded-full px-8 shadow-lg shadow-blue-900/20">
                             Resume Lesson
                         </Button>
                     </Link>
@@ -69,7 +69,7 @@ export default async function DashboardPage() {
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     {subjects.map((subject) => (
                         <SubjectCard
                             key={subject.id}
@@ -83,11 +83,10 @@ export default async function DashboardPage() {
                 </div>
             )}
 
-            {/* Statistics Section (Re-adding them as they fit well in the main dashboard) */}
+            {/* Statistics Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-8 border-t border-white/5">
                 <div className="lg:col-span-1">
                     <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-4">Total Study Time</h3>
-                    {/* Simplified Stats Display */}
                     <div className="p-6 rounded-2xl bg-zinc-900/50 border border-white/5">
                         <div className="text-3xl font-bold text-blue-400 flex items-center gap-2">
                             <span className="font-mono">{studyHours}h {studyMins}m</span>
@@ -101,8 +100,8 @@ export default async function DashboardPage() {
                         {[...subjects].sort((a, b) => b.progress - a.progress).slice(0, 4).map(s => (
                             <div key={s.id} className="space-y-2">
                                 <div className="flex justify-between text-sm">
-                                    <span className="font-medium text-white">{s.title}</span>
-                                    <span className="text-zinc-500">{s.progress}%</span>
+                                    <span className="font-medium text-white truncate pr-2">{s.title}</span>
+                                    <span className="text-zinc-500 shrink-0">{s.progress}%</span>
                                 </div>
                                 <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
                                     <div className="h-full bg-blue-600 transition-all duration-500 ease-out" style={{ width: `${s.progress}%` }} />
